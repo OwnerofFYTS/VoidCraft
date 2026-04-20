@@ -5,43 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VoidCraft | Pro Edition</title>
     <style>
-        body { margin: 0; padding: 0; background: #020c1b; color: #e6f1ff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        body { margin: 0; padding: 0; background: #020c1b; color: #e6f1ff; font-family: 'Segoe UI', sans-serif; overflow: hidden; user-select: none; }
         
-        /* UI OVERLAY */
         #game-view { display: none; position: fixed; inset: 0; z-index: 1000; }
-        #crosshair { position: fixed; top: 50%; left: 50%; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.5); transform: translate(-50%, -50%); pointer-events: none; }
+        #crosshair { position: fixed; top: 50%; left: 50%; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.6); transform: translate(-50%, -50%); pointer-events: none; mix-blend-mode: difference; }
 
-        /* ITEM NAME ABOVE HOTBAR */
-        #hotbar-label { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 18px; text-shadow: 2px 2px #000; opacity: 0; transition: opacity 0.5s; pointer-events: none; font-weight: bold; }
+        /* HOTBAR NAME POPUP */
+        #hotbar-label { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); color: #ffffff; font-size: 18px; text-shadow: 2px 2px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: 500; z-index: 1020; }
 
         /* HAND SYSTEM */
-        #hand-container { position: fixed; bottom: -20px; right: 10%; width: 250px; height: 250px; pointer-events: none; z-index: 1005; }
+        #hand-container { position: fixed; bottom: -10px; right: 10%; width: 250px; height: 250px; pointer-events: none; z-index: 1005; }
         .held-item { width: 120px; height: 120px; transition: transform 0.1s; transform-origin: bottom; }
-        .sword-hand { background: #64ffda; clip-path: polygon(45% 0%, 55% 0%, 55% 70%, 100% 70%, 100% 80%, 55% 80%, 55% 100%, 45% 100%, 45% 80%, 0% 80%, 0% 70%, 45% 70%); transform: rotate(20deg) translateX(50px); box-shadow: inset -10px -10px rgba(0,0,0,0.2); }
+        .sword-hand { background: #64ffda; clip-path: polygon(45% 0%, 55% 0%, 55% 70%, 100% 70%, 100% 80%, 55% 80%, 55% 100%, 45% 100%, 45% 80%, 0% 80%, 0% 70%, 45% 70%); transform: rotate(20deg) translateX(50px); box-shadow: inset -10px -10px rgba(0,0,0,0.3); }
         .block-hand { background: #8892b0; border: 5px solid #233554; width: 90px; height: 90px; transform: rotate(5deg) translateX(40px); }
 
-        /* INVENTORY & HOTBAR */
+        /* INVENTORY & SLOTS */
         #hotbar { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: rgba(0,0,0,0.8); padding: 6px; border: 3px solid #1a1a1a; z-index: 1010; }
-        .slot { width: 48px; height: 48px; background: #8b8b8b; border: 3px solid #373737; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: inset -3px -3px #555; }
-        .slot.selected { border: 3px solid #ffffff; background: #a0a0a0; box-shadow: none; }
+        .slot { width: 48px; height: 48px; background: #8b8b8b; border: 3px solid #373737; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; box-shadow: inset -3px -3px rgba(0,0,0,0.2); }
+        .slot.selected { border: 3px solid #ffffff; background: #a0a0a0; z-index: 1015; }
         
         #inventory-screen { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #c6c6c6; border: 4px solid #333; padding: 25px; z-index: 2000; box-shadow: 0 0 100px #000; }
         .inv-grid { display: grid; grid-template-columns: repeat(9, 48px); gap: 4px; }
 
-        /* ITEM PIXELS */
-        .i-sword { width: 24px; height: 24px; background: #64ffda; clip-path: polygon(0% 100%, 100% 0%, 70% 0%, 0% 70%); pointer-events: none; }
-        .i-block { width: 22px; height: 22px; background: #8892b0; border: 2px solid #233554; pointer-events: none; }
+        /* CURSOR ITEM (DRAGGING) */
+        #cursor-item { position: fixed; pointer-events: none; z-index: 3000; width: 40px; height: 40px; display: none; justify-content: center; align-items: center; }
 
-        /* DRAGGING ICON */
-        #cursor-item { position: fixed; pointer-events: none; z-index: 3000; display: none; }
+        /* PIXEL ART */
+        .i-sword { width: 24px; height: 24px; background: #64ffda; clip-path: polygon(0% 100%, 100% 0%, 70% 0%, 0% 70%); }
+        .i-block { width: 22px; height: 22px; background: #8892b0; border: 2px solid #233554; }
 
-        .btn-start { margin-top: 50px; padding: 20px 60px; background: #64ffda; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .btn-start { margin-top: 50px; padding: 20px 60px; background: #64ffda; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="hero" id="home-hero">
-        <h1 style="font-size: 80px; margin:0; color:#ccd6f6">VoidCraft</h1>
+    <div class="hero" id="home-hero" style="height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; background:#0a192f;">
+        <h1 style="font-size: 80px; color:#ccd6f6; margin:0;">VoidCraft</h1>
         <button class="btn-start" onclick="launchGame()">START GAME</button>
     </div>
 
@@ -49,22 +48,19 @@
         <div id="crosshair"></div>
         <div id="hotbar-label">Diamond Sword</div>
         
-        <div id="hand-container">
-            <div id="held-item-visual" class="held-item"></div>
-        </div>
-
+        <div id="hand-container"><div id="held-item-visual" class="held-item"></div></div>
         <div id="cursor-item"></div>
 
         <div id="hotbar">
-            <script>for(let i=1; i<=9; i++) document.write(`<div class="slot ${i===1?'selected':''}" id="slot-${i}" onclick="handleSlotClick(this)"></div>`);</script>
+            <script>for(let i=1; i<=9; i++) document.write(`<div class="slot ${i===1?'selected':''}" id="slot-${i}" data-index="${i}"></div>`);</script>
         </div>
 
         <div id="inventory-screen">
-            <p style="color:#333; font-weight:bold; margin-top:0;">Inventory</p>
+            <p style="color:#333; font-weight:bold; margin:0 0 10px 0;">Inventory</p>
             <div class="inv-grid">
-                <script>for(let i=10; i<=36; i++) document.write(`<div class="slot" id="slot-${i}" onclick="handleSlotClick(this)"></div>`);</script>
+                <script>for(let i=10; i<=36; i++) document.write(`<div class="slot" id="slot-${i}" data-index="${i}"></div>`);</script>
             </div>
-            <p style="color:#333; font-weight:bold;">Hotbar</p>
+            <p style="color:#333; font-weight:bold; margin:15px 0 10px 0;">Hotbar</p>
             <div class="inv-grid" id="inv-hotbar-mirror"></div>
         </div>
         <canvas id="void-canvas"></canvas>
@@ -75,10 +71,52 @@
     <script>
         let invOpen = false, currentSlot = 1;
         let grabbedItem = null;
-        const itemsData = {
-            'sword': { name: "Diamond Sword", class: "sword-hand", icon: "i-sword" },
-            'block': { name: "Void Block", class: "block-hand", icon: "i-block" }
-        };
+        const itemNames = { 'sword': 'Diamond Sword', 'block': 'Void Block' };
+
+        // ITEM INTERACTION LOGIC
+        document.addEventListener('mousedown', (e) => {
+            if (!invOpen) return;
+            const slot = e.target.closest('.slot');
+            if (!slot) return;
+
+            const cursorItem = document.getElementById('cursor-item');
+
+            if (!grabbedItem) {
+                if (slot.dataset.type) {
+                    grabbedItem = { type: slot.dataset.type, html: slot.innerHTML, name: slot.dataset.name };
+                    slot.innerHTML = '';
+                    delete slot.dataset.type;
+                    delete slot.dataset.name;
+                    cursorItem.innerHTML = grabbedItem.html;
+                    cursorItem.style.display = 'flex';
+                }
+            } else {
+                const oldSlotType = slot.dataset.type;
+                const oldSlotHtml = slot.innerHTML;
+                const oldSlotName = slot.dataset.name;
+
+                slot.innerHTML = grabbedItem.html;
+                slot.dataset.type = grabbedItem.type;
+                slot.dataset.name = grabbedItem.name;
+
+                if (oldSlotType) {
+                    grabbedItem = { type: oldSlotType, html: oldSlotHtml, name: oldSlotName };
+                    cursorItem.innerHTML = grabbedItem.html;
+                } else {
+                    grabbedItem = null;
+                    cursorItem.style.display = 'none';
+                }
+                updateHandVisual();
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (invOpen && grabbedItem) {
+                const cursorItem = document.getElementById('cursor-item');
+                cursorItem.style.left = (e.clientX - 20) + 'px';
+                cursorItem.style.top = (e.clientY - 20) + 'px';
+            }
+        });
 
         function showLabel(text) {
             const label = document.getElementById('hotbar-label');
@@ -88,78 +126,43 @@
             window.labelTimer = setTimeout(() => label.style.opacity = 0, 2000);
         }
 
-        function handleSlotClick(el) {
-            if (!invOpen) return;
-            const cursor = document.getElementById('cursor-item');
-            
-            if (!grabbedItem) {
-                if (el.innerHTML !== "") {
-                    grabbedItem = { html: el.innerHTML, type: el.dataset.type, name: el.dataset.name };
-                    el.innerHTML = "";
-                    el.dataset.type = "";
-                    cursor.innerHTML = grabbedItem.html;
-                    cursor.style.display = "block";
-                }
-            } else {
-                const tempHTML = el.innerHTML;
-                const tempType = el.dataset.type;
-                const tempName = el.dataset.name;
-                
-                el.innerHTML = grabbedItem.html;
-                el.dataset.type = grabbedItem.type;
-                el.dataset.name = grabbedItem.name;
-
-                if (tempHTML !== "") {
-                    grabbedItem = { html: tempHTML, type: tempType, name: tempName };
-                    cursor.innerHTML = grabbedItem.html;
-                } else {
-                    grabbedItem = null;
-                    cursor.style.display = "none";
-                }
-            }
-            updateHandVisual();
-        }
-
         function updateHandVisual() {
             const slot = document.getElementById(`slot-${currentSlot}`);
-            const visual = document.getElementById('held-item-visual');
-            visual.className = 'held-item';
-            if (slot.dataset.type === 'sword') visual.classList.add('sword-hand');
-            if (slot.dataset.type === 'block') visual.classList.add('block-hand');
+            const hand = document.getElementById('held-item-visual');
+            hand.className = 'held-item';
+            if (slot.dataset.type === 'sword') hand.classList.add('sword-hand');
+            if (slot.dataset.type === 'block') hand.classList.add('block-hand');
         }
 
         function launchGame() {
             document.getElementById('home-hero').style.display = 'none';
             document.getElementById('game-view').style.display = 'block';
             
-            // Initial items
+            // Starter Items
             const s1 = document.getElementById('slot-1');
-            s1.innerHTML = `<div class="i-sword"></div>`;
-            s1.dataset.type = "sword"; s1.dataset.name = "Diamond Sword";
+            s1.innerHTML = '<div class="i-sword"></div>';
+            s1.dataset.type = 'sword'; s1.dataset.name = 'Diamond Sword';
             
             const s2 = document.getElementById('slot-2');
-            s2.innerHTML = `<div class="i-block"></div>`;
-            s2.dataset.type = "block"; s2.dataset.name = "Void Block";
+            s2.innerHTML = '<div class="i-block"></div>';
+            s2.dataset.type = 'block'; s2.dataset.name = 'Void Block';
 
             startVoidEngine();
-            setInterval(luckyDrop, 5000);
-        }
-
-        function luckyDrop() {
-            const r = Math.random() > 0.5 ? 'sword' : 'block';
-            for(let i=1; i<=9; i++) {
-                const s = document.getElementById(`slot-${i}`);
-                if(s.innerHTML === "") {
-                    s.innerHTML = `<div class="i-${r}"></div>`;
-                    s.dataset.type = r;
-                    s.dataset.name = itemsData[r].name;
-                    if(i === currentSlot) {
-                        showLabel(itemsData[r].name);
-                        updateHandVisual();
+            updateHandVisual();
+            showLabel("Diamond Sword");
+            
+            setInterval(() => {
+                const r = Math.random() > 0.5 ? 'sword' : 'block';
+                for(let i=1; i<=9; i++) {
+                    const s = document.getElementById(`slot-${i}`);
+                    if(!s.dataset.type) {
+                        s.innerHTML = `<div class="i-${r}"></div>`;
+                        s.dataset.type = r; s.dataset.name = itemNames[r];
+                        if(i === currentSlot) { showLabel(itemNames[r]); updateHandVisual(); }
+                        break;
                     }
-                    break;
                 }
-            }
+            }, 5000);
         }
 
         function startVoidEngine() {
@@ -169,37 +172,23 @@
             const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('void-canvas'), antialias: true});
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            // Better Lava Texture
-            const lavaGeo = new THREE.PlaneGeometry(1000, 1000);
-            const lavaMat = new THREE.MeshBasicMaterial({color: 0xff3300, side: THREE.DoubleSide});
-            const lava = new THREE.Mesh(lavaGeo, lavaMat);
+            // Level Texture (Lava)
+            const lava = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshBasicMaterial({color: 0xff4400, side: THREE.DoubleSide}));
             lava.rotation.x = Math.PI/2; lava.position.y = -30;
             scene.add(lava);
 
-            // Towers
+            // Dark Towers
             for(let i=0; i<8; i++) {
-                const tower = new THREE.Mesh(new THREE.BoxGeometry(15, 2, 15), new THREE.MeshStandardMaterial({color: 0x333333}));
+                const tower = new THREE.Mesh(new THREE.BoxGeometry(15, 2, 15), new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.8}));
                 tower.position.set(Math.cos(i/8*Math.PI*2)*40, 0, Math.sin(i/8*Math.PI*2)*40);
                 scene.add(tower);
             }
-            scene.add(new THREE.PointLight(0xffffff, 1, 100));
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            scene.add(new THREE.PointLight(0x64ffda, 1, 100));
 
             camera.position.set(40, 4, 40);
             let velY = 0, onG = true, pitch = 0, yaw = 0;
             const keys = {};
-
-            window.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement) {
-                    yaw -= e.movementX * 0.002;
-                    pitch = Math.max(-1.5, Math.min(1.5, pitch - e.movementY * 0.002));
-                }
-                if (invOpen) {
-                    const cursor = document.getElementById('cursor-item');
-                    cursor.style.left = e.clientX + 'px';
-                    cursor.style.top = e.clientY + 'px';
-                }
-            });
 
             window.addEventListener('keydown', (e) => {
                 keys[e.code] = true;
@@ -209,7 +198,7 @@
                     if (invOpen) document.exitPointerLock(); else document.getElementById('void-canvas').requestPointerLock();
                 }
                 if (e.key >= 1 && e.key <= 9) {
-                    document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
+                    document.querySelectorAll('#hotbar .slot').forEach(s => s.classList.remove('selected'));
                     currentSlot = parseInt(e.key);
                     const s = document.getElementById(`slot-${currentSlot}`);
                     s.classList.add('selected');
@@ -218,6 +207,13 @@
                 }
             });
             window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+            document.getElementById('void-canvas').addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement) {
+                    yaw -= e.movementX * 0.002;
+                    pitch = Math.max(-1.5, Math.min(1.5, pitch - e.movementY * 0.002));
+                }
+            });
 
             function animate() {
                 requestAnimationFrame(animate);
@@ -230,7 +226,7 @@
                     if(keys['Space'] && onG) { velY = 0.22; onG = false; }
                 }
                 velY -= 0.01; camera.position.y += velY;
-                let h = keys['ShiftLeft'] ? 2.5 : 4;
+                let h = keys['ShiftLeft'] ? 2.8 : 4;
                 if(camera.position.y <= h) { camera.position.y = h; velY = 0; onG = true; }
                 camera.rotation.set(pitch, yaw, 0, 'YXZ');
                 renderer.render(scene, camera);
