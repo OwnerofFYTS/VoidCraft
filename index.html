@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VoidCraft | Enter the Void</title>
     <style>
-        /* DESIGN REMAINS UNTOUCHED */
+        /* DESIGN UNTOUCHED */
         body { margin: 0; padding: 0; background: radial-gradient(circle at center, #0a192f 0%, #020c1b 100%); color: #e6f1ff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         nav { display: flex; justify-content: flex-end; padding: 25px 60px; gap: 20px; align-items: center; z-index: 10; }
         .login-btn { color: #8892b0; background: none; border: none; font-size: 15px; font-weight: 500; cursor: pointer; }
@@ -21,11 +21,20 @@
         input { width: 100%; padding: 12px; margin: 8px 0; background: #0a192f; border: 1px solid #233554; color: white; border-radius: 6px; box-sizing: border-box; }
         .submit-btn { width: 100%; padding: 12px; background: #64ffda; color: #0a192f; border: none; border-radius: 6px; font-weight: bold; margin-top: 15px; cursor: pointer; }
 
-        /* VOIDCRAFT 3D ENGINE AREA */
+        /* VOIDCRAFT 3D GAME AREA */
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 1000; }
-        #game-canvas { width: 100%; height: 100%; display: block; }
-        #crosshair { position: fixed; top: 50%; left: 50%; width: 20px; height: 20px; border: 2px solid #64ffda; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%; }
-        #ui-overlay { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 10px; border: 1px solid #64ffda; display: none; }
+        #game-canvas { width: 100%; height: 100%; display: block; cursor: crosshair; }
+        
+        /* CROSSHAIR */
+        #crosshair { position: fixed; top: 50%; left: 50%; width: 20px; height: 20px; transform: translate(-50%, -50%); pointer-events: none; z-index: 1002; }
+        #crosshair:before, #crosshair:after { content: ''; position: absolute; background: #64ffda; }
+        #crosshair:before { top: 0; left: 9px; width: 2px; height: 20px; }
+        #crosshair:after { top: 9px; left: 0; width: 20px; height: 2px; }
+
+        /* INVENTORY BAR */
+        #inventory { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(17, 34, 64, 0.8); border: 2px solid #64ffda; padding: 10px 40px; border-radius: 12px; display: flex; align-items: center; gap: 15px; z-index: 1002; }
+        .item-text { font-weight: bold; letter-spacing: 1px; color: #fff; }
+
         #game-menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1001; }
         .mode-btn { display: block; width: 250px; padding: 20px; margin: 15px; background: #112240; color: #64ffda; border: 2px solid #64ffda; border-radius: 8px; font-size: 20px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
     </style>
@@ -60,10 +69,13 @@
         <div id="game-menu">
             <h2 style="color: white; margin-bottom: 30px; font-size: 32px;">SELECT GAME MODE</h2>
             <button class="mode-btn" onclick="startLuckyTowers()">Lucky Towers</button>
-            <button class="mode-btn" onclick="location.reload()">Survival (Wait)</button>
+            <button class="mode-btn" onclick="location.reload()">Back to Menu</button>
         </div>
         <div id="crosshair" style="display:none"></div>
-        <div id="ui-overlay">Inventory: <span id="current-item">Empty</span></div>
+        <div id="inventory" style="display:none">
+            <span style="color:#64ffda; font-size:12px;">NEW ITEM:</span>
+            <span class="item-text" id="current-item">WAITING...</span>
+        </div>
         <canvas id="game-canvas"></canvas>
     </div>
 
@@ -78,11 +90,11 @@
         function checkAuth() { if(!isUserLoggedIn) openAuth('signup'); else startTheGame(); }
         function startTheGame() { isUserLoggedIn=true; closeModal(); document.getElementById('main-nav').style.display='none'; document.getElementById('main-hero').style.display='none'; document.getElementById('game-container').style.display='block'; }
 
-        // --- LUCKY TOWERS 3D ENGINE ---
+        // --- OWN 3D GAME ENGINE ---
         function startLuckyTowers() {
             document.getElementById('game-menu').style.display = 'none';
             document.getElementById('crosshair').style.display = 'block';
-            document.getElementById('ui-overlay').style.display = 'block';
+            document.getElementById('inventory').style.display = 'flex';
 
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x020c1b);
@@ -90,38 +102,34 @@
             const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('game-canvas'), antialias: true});
             renderer.setSize(window.innerWidth, window.innerHeight);
 
-            // Lava Floor
-            const lavaGeo = new THREE.PlaneGeometry(200, 200);
-            const lavaMat = new THREE.MeshBasicMaterial({color: 0xff4500, side: THREE.DoubleSide});
+            // Lava Texture Floor
+            const lavaGeo = new THREE.PlaneGeometry(300, 300);
+            const lavaMat = new THREE.MeshBasicMaterial({color: 0xff3300, side: THREE.DoubleSide});
             const lava = new THREE.Mesh(lavaGeo, lavaMat);
             lava.rotation.x = Math.PI/2;
-            lava.position.y = -30;
+            lava.position.y = -30; // 30 blocks below towers
             scene.add(lava);
 
-            // 8 Towers/Platforms
-            const towerGeo = new THREE.BoxGeometry(5, 1, 5);
-            const towerMat = new THREE.MeshBasicMaterial({color: 0x8892b0});
+            // 8 Players Towers
+            const towerGeo = new THREE.BoxGeometry(6, 1, 6);
+            const towerMat = new THREE.MeshBasicMaterial({color: 0x444d56});
             for(let i=0; i<8; i++) {
                 const tower = new THREE.Mesh(towerGeo, towerMat);
                 const angle = (i/8) * Math.PI * 2;
-                tower.position.set(Math.cos(angle)*20, 0, Math.sin(angle)*20);
+                tower.position.set(Math.cos(angle)*25, 0, Math.sin(angle)*25);
                 scene.add(tower);
             }
 
-            // Player Setup
-            camera.position.set(20, 2, 20);
-            const move = { f:0, b:0, l:0, r:0 };
-            window.addEventListener('keydown', (e) => {
-                if(e.key=='w') move.f=0.2; if(e.key=='s') move.b=0.2;
-                if(e.key=='a') move.l=0.2; if(e.key=='d') move.r=0.2;
-            });
-            window.addEventListener('keyup', (e) => {
-                if(e.key=='w') move.f=0; if(e.key=='s') move.b=0;
-                if(e.key=='a') move.l=0; if(e.key=='d') move.r=0;
-            });
+            camera.position.set(25, 3, 25);
+            camera.lookAt(0,0,0);
 
-            // Lucky Item System
-            const items = ["Pixel Block", "Iron Sword", "Void Bow", "Golden Apple", "Ender Pearl"];
+            // Movement controls
+            const keys = {};
+            window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+            window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+            // Inventory Item System (5 seconds)
+            const items = ["DIAMOND BLOCK", "IRON SWORD", "ENDER PEARL", "TNT", "OBSIDIAN"];
             setInterval(() => {
                 const randomItem = items[Math.floor(Math.random()*items.length)];
                 document.getElementById('current-item').innerText = randomItem;
@@ -129,9 +137,15 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-                camera.position.z -= move.f - move.b;
-                camera.position.x -= move.l - move.r;
-                if(camera.position.y < -25) { alert("You fell in Lava!"); camera.position.set(20, 2, 20); }
+                if(keys['w']) camera.position.z -= 0.3;
+                if(keys['s']) camera.position.z += 0.3;
+                if(keys['a']) camera.position.x -= 0.3;
+                if(keys['d']) camera.position.x += 0.3;
+
+                if(camera.position.y < -28) {
+                    alert("LAVA DEATH!");
+                    camera.position.set(25, 3, 25);
+                }
                 renderer.render(scene, camera);
             }
             animate();
