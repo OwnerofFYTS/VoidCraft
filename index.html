@@ -96,18 +96,14 @@
             }
 
             scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-            const light = new THREE.PointLight(0x64ffda, 1, 100);
-            light.position.set(0, 10, 0);
-            scene.add(light);
-
             camera.position.set(30, 3, 30);
 
-            // Physics/Movement Variables
+            // Controls setup
             const keys = {};
             let velocityY = 0;
-            const gravity = -0.01;
-            const jumpStrength = 0.2;
-            let canJump = true;
+            const gravity = -0.008;
+            const jumpStrength = 0.18;
+            let onGround = true;
 
             window.addEventListener('keydown', (e) => keys[e.code] = true);
             window.addEventListener('keyup', (e) => keys[e.code] = false);
@@ -122,8 +118,8 @@
                 }
             });
 
-            const items = ["DIAMOND BLOCK", "TNT", "ENDER PEARL", "IRON SWORD"];
             setInterval(() => {
+                const items = ["DIAMOND BLOCK", "TNT", "ENDER PEARL", "IRON SWORD"];
                 document.getElementById('item-slot').innerText = items[Math.floor(Math.random()*items.length)];
             }, 5000);
 
@@ -131,12 +127,11 @@
                 requestAnimationFrame(animate);
                 
                 if (document.pointerLockElement === canvas) {
-                    // Speed Logic
                     let currentSpeed = 0.15;
-                    if (keys['ControlLeft']) currentSpeed = 0.25; // Sprint
-                    if (keys['ShiftLeft']) currentSpeed = 0.06;   // Crouch Walk
+                    if (keys['ControlLeft']) currentSpeed = 0.25; 
+                    if (keys['ShiftLeft']) currentSpeed = 0.06;
 
-                    // Corrected Minecraft Keybinds
+                    // Forward/Backward
                     if(keys['KeyW']) {
                         camera.position.x -= Math.sin(yaw) * currentSpeed;
                         camera.position.z -= Math.cos(yaw) * currentSpeed;
@@ -145,6 +140,7 @@
                         camera.position.x += Math.sin(yaw) * currentSpeed;
                         camera.position.z += Math.cos(yaw) * currentSpeed;
                     }
+                    // Strafe Left/Right
                     if(keys['KeyA']) {
                         camera.position.x -= Math.sin(yaw + Math.PI/2) * currentSpeed;
                         camera.position.z -= Math.cos(yaw + Math.PI/2) * currentSpeed;
@@ -155,25 +151,24 @@
                     }
 
                     // Jump Logic
-                    if(keys['Space'] && canJump) {
+                    if(keys['Space'] && onGround) {
                         velocityY = jumpStrength;
-                        canJump = false;
+                        onGround = false;
                     }
                 }
 
-                // Gravity & Floor Collision
+                // Physics
                 velocityY += gravity;
                 camera.position.y += velocityY;
 
-                if (camera.position.y <= 3) {
-                    camera.position.y = 3;
-                    velocityY = 0;
-                    canJump = true;
-                }
+                // Base height (Minecraft Style)
+                let floorHeight = 3;
+                if (keys['ShiftLeft']) floorHeight = 2.2; // Crouch height
 
-                // Crouch Visual Effect
-                if (keys['ShiftLeft']) {
-                    camera.position.y = 2.2;
+                if (camera.position.y <= floorHeight) {
+                    camera.position.y = floorHeight;
+                    velocityY = 0;
+                    onGround = true;
                 }
 
                 camera.rotation.set(pitch, yaw, 0, 'YXZ');
