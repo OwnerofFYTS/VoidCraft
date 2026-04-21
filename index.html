@@ -3,36 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | THE ULTIMATE FIX</title>
+    <title>VOID AURA | BRIGHT VERSION</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: 'Segoe UI', sans-serif; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #eee; color: #000; font-family: 'Segoe UI', sans-serif; }
         #game-container { position: relative; width: 100%; height: 100vh; }
         
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 10000; text-align: center;
         }
+
+        /* Center Crosshair */
+        #crosshair {
+            position: absolute; top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            transform: translate(-50%, -50%);
+            z-index: 5000; pointer-events: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: ''; position: absolute; background: #ff4400;
+        }
+        #crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); }
+        #crosshair::after { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
 
         .hotbar {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 10px; z-index: 9999;
         }
         .slot {
-            width: 65px; height: 65px; background: rgba(30,30,30,0.9);
-            border: 2px solid #555; display: flex; justify-content: center; align-items: center; border-radius: 5px;
+            width: 65px; height: 65px; background: rgba(255,255,255,0.9);
+            border: 2px solid #999; display: flex; justify-content: center; align-items: center; border-radius: 5px;
         }
-        .slot.active { border-color: #ffaa00; box-shadow: 0 0 20px #ffaa00; background: #443300; }
+        .slot.active { border-color: #ff4400; box-shadow: 0 0 15px #ff4400; }
 
         #stamina-bar {
             position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            width: 250px; height: 12px; background: #111; border: 1px solid #ffaa00; border-radius: 10px; overflow: hidden;
+            width: 250px; height: 12px; background: #ccc; border: 1px solid #ff4400; border-radius: 10px; overflow: hidden;
         }
-        #stamina-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ffaa00, #ff5500); transition: width 0.1s; }
+        #stamina-fill { width: 100%; height: 100%; background: #ff4400; }
 
         #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #300 0%, #000 100%); display: none; z-index: 20000;
+            background: white; display: none; z-index: 20000;
             flex-direction: column; justify-content: center; align-items: center;
         }
     </style>
@@ -41,13 +54,12 @@
 
 <div id="game-container">
     <div id="ui-overlay">
-        <h1 style="color: #ffaa00; font-size: 4rem; margin: 0;">VOID AURA</h1>
-        <div style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; margin-top: 20px;">
-            <p><b>SPACE:</b> Jump | <b>CTRL:</b> Run (Fast) | <b>SHIFT:</b> Crouch (Low)</p>
-            <p><b>KEY 1:</b> Toggle Flashlight Beam</p>
-        </div>
-        <button id="start-btn" style="margin-top: 30px; padding: 15px 40px; cursor: pointer; background: #ffaa00; border: none; font-size: 1.5rem; font-weight: bold; border-radius: 5px;">PLAY NOW</button>
+        <h1 style="color: #ff4400; font-size: 3rem;">VOID AURA (BRIGHT)</h1>
+        <p>SPACE: Jump | CTRL: Run | SHIFT: Crouch | 1: Flashlight</p>
+        <button id="start-btn" style="padding: 15px 40px; cursor: pointer; background: #ff4400; border: none; color: white; font-weight: bold; border-radius: 5px;">START GAME</button>
     </div>
+
+    <div id="crosshair"></div>
 
     <div class="hotbar">
         <div class="slot" id="slot-1">🔦</div>
@@ -57,9 +69,8 @@
     <div id="stamina-bar"><div id="stamina-fill"></div></div>
     
     <div id="game-over">
-        <h1 style="font-size: 5rem; color: #ff0000;">MASHED!</h1>
-        <p>The Potato touched your soul.</p>
-        <button onclick="location.reload()" style="padding: 15px 40px; font-size: 1.2rem; cursor: pointer;">RETRY</button>
+        <h1 style="color: red;">POTATO CAUGHT YOU!</h1>
+        <button onclick="location.reload()" style="padding: 10px 30px;">RETRY</button>
     </div>
 </div>
 
@@ -68,13 +79,12 @@
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050505); // Slightly brighter than pure black
-    scene.fog = new THREE.Fog(0x000000, 1, 50);
+    scene.background = new THREE.Color(0xdddddd); // Bright background
+    scene.fog = new THREE.Fog(0xdddddd, 10, 100);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.shadowMap.enabled = true;
     document.getElementById('game-container').appendChild(renderer.domElement);
 
     const player = new THREE.Group();
@@ -82,31 +92,29 @@
     scene.add(player);
     player.add(camera);
 
-    // --- ENHANCED FLASHLIGHT (ON SCREEN LIGHT) ---
-    const torch = new THREE.SpotLight(0xffffff, 0, 100, Math.PI/5, 0.3, 1);
-    torch.position.set(0, 0, 0.1); 
+    // --- BRIGHT LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // High ambient brightness
+    scene.add(ambientLight);
+    
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    sunLight.position.set(5, 10, 5);
+    scene.add(sunLight);
+
+    // Flashlight Beam
+    const torch = new THREE.SpotLight(0xffffff, 0, 80, Math.PI/6, 0.3, 1);
     camera.add(torch);
-    torch.target.position.set(0, 0, -5); 
+    torch.target.position.set(0, 0, -1);
     camera.add(torch.target);
 
-    // Point light for close-up visibility
-    const pointLight = new THREE.PointLight(0xffffff, 0, 10);
-    camera.add(pointLight);
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.05)); // Brighter background
-    const grid = new THREE.GridHelper(500, 100, 0x333333, 0x111111);
+    const grid = new THREE.GridHelper(500, 50, 0x999999, 0xbbbbbb);
     scene.add(grid);
 
-    // --- POTATO (NOW VERY VISIBLE) ---
+    // --- POTATO ---
     const potatoGeo = new THREE.SphereGeometry(1.6, 32, 32);
     potatoGeo.scale(1.2, 1.5, 1.1);
-    const potatoMat = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513, 
-        roughness: 0.8,
-        emissive: 0x221100 // Subtle glow
-    });
+    const potatoMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.5 });
     const stalker = new THREE.Mesh(potatoGeo, potatoMat);
-    stalker.position.set(0, 1.6, 25);
+    stalker.position.set(0, 1.6, 30);
     scene.add(stalker);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
@@ -123,8 +131,7 @@
         keys[e.code] = true;
         if(e.key === '1') {
             isFlashlightOn = !isFlashlightOn;
-            torch.intensity = isFlashlightOn ? 12 : 0;
-            pointLight.intensity = isFlashlightOn ? 1.5 : 0;
+            torch.intensity = isFlashlightOn ? 10 : 0;
             document.getElementById('slot-1').classList.toggle('active', isFlashlightOn);
         }
     };
@@ -133,37 +140,31 @@
     function gameLoop() {
         requestAnimationFrame(gameLoop);
         if (controls.isLocked) {
-            const delta = 0.016; 
-
-            // Crouching (SHIFT) - As requested
+            // Crouch (SHIFT)
             let targetHeight = keys['ShiftLeft'] ? 0.9 : 1.7;
             player.position.y += (targetHeight - player.position.y) * 0.15;
 
-            // Sprinting (CTRL) - As requested
+            // Sprint (CTRL)
             let isRunning = keys['ControlLeft'] && stamina > 0;
-            let speed = isRunning ? 0.28 : 0.14;
+            let speed = isRunning ? 0.25 : 0.12;
 
-            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) {
-                stamina -= 0.6;
-            } else if (stamina < 100) {
-                stamina += 0.3;
-            }
+            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) stamina -= 0.5;
+            else if (stamina < 100) stamina += 0.3;
             document.getElementById('stamina-fill').style.width = stamina + "%";
 
-            // Movement
             if (keys['KeyW']) controls.moveForward(speed);
             if (keys['KeyS']) controls.moveForward(-speed);
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
 
-            // Jumping (SPACE)
+            // Jump (SPACE)
             if (keys['Space'] && canJump) {
                 velocityY = 0.18;
                 canJump = false;
             }
             player.position.y += velocityY;
             if (player.position.y > targetHeight) {
-                velocityY -= 0.01; // Gravity
+                velocityY -= 0.01;
             } else {
                 player.position.y = targetHeight;
                 velocityY = 0;
@@ -171,13 +172,11 @@
             }
 
             // Potato AI
-            const stalkerSpeed = 0.07;
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
-            stalker.position.add(dir.multiplyScalar(stalkerSpeed));
+            stalker.position.add(dir.multiplyScalar(0.06));
             stalker.lookAt(player.position.x, 1.6, player.position.z);
 
-            // Collision Kill Zone
             if (player.position.distanceTo(stalker.position) < 2.5) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
@@ -186,12 +185,6 @@
         renderer.render(scene, camera);
     }
     gameLoop();
-
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
 </script>
 </body>
 </html>
