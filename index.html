@@ -25,6 +25,15 @@
         }
         #play-button:hover { background: #ff3e3e; color: white; box-shadow: 0 0 30px #ff3e3e; }
 
+        /* Stamina Bar UI */
+        #stamina-container {
+            position: absolute; bottom: 30px; left: 50%;
+            transform: translateX(-50%); width: 200px; height: 10px;
+            border: 1px solid #400; background: rgba(0,0,0,0.5);
+            display: none; z-index: 60;
+        }
+        #stamina-bar { width: 100%; height: 100%; background: #ff0000; transition: width 0.1s; }
+
         #reticle {
             position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
             background: rgba(255, 0, 0, 0.7); border-radius: 50%; transform: translate(-50%, -50%);
@@ -43,8 +52,12 @@
 <div id="game-wrapper">
     <div id="ui-layer">
         <h1>VOID AURA</h1>
-        <div class="subtitle">HE IS FASTER THAN YOU</div>
+        <div class="subtitle">RUN. HE IS COMING.</div>
         <button id="play-button">PLAY</button>
+    </div>
+
+    <div id="stamina-container">
+        <div id="stamina-bar"></div>
     </div>
 
     <div id="game-over">
@@ -62,7 +75,6 @@
 <script>
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020202);
-    // Fog ko thora kam kiya taake rasta nazar aaye
     scene.fog = new THREE.Fog(0x020202, 1, 45);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -75,46 +87,51 @@
     scene.add(player);
     player.add(camera);
 
-    // Flashlight aur Ambient Light taake andhera bilkul black na ho
-    const ambient = new THREE.AmbientLight(0xffffff, 0.1); 
-    scene.add(ambient);
-
+    scene.add(new THREE.AmbientLight(0xffffff, 0.1));
     const flashlight = new THREE.SpotLight(0xffffff, 2, 30, Math.PI/4, 0.3);
     camera.add(flashlight);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
 
-    // Floor Grid (Visual guide)
     const grid = new THREE.GridHelper(300, 100, 0x440000, 0x111111);
     scene.add(grid);
 
-    // RED BLOCK (The Stalker)
-    const stalkerGeo = new THREE.BoxGeometry(1.5, 3.5, 1.5);
-    const stalkerMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    const stalker = new THREE.Mesh(stalkerGeo, stalkerMat);
-    stalker.position.set(0, 1.75, 25); // Thora qareeb rakha hai taake dikhai de
+    const stalker = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 3.5, 1.5),
+        new THREE.MeshBasicMaterial({ color: 0xff0000 })
+    );
+    stalker.position.set(0, 1.75, 30);
     scene.add(stalker);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
     const playBtn = document.getElementById('play-button');
     const ui = document.getElementById('ui-layer');
+    const staminaUI = document.getElementById('stamina-container');
+    const staminaBar = document.getElementById('stamina-bar');
 
     playBtn.onclick = () => controls.lock();
     controls.addEventListener('lock', () => { 
         ui.style.display = 'none';
+        staminaUI.style.display = 'block';
         document.getElementById('reticle').style.display = 'block';
     });
     controls.addEventListener('unlock', () => { 
         if(document.getElementById('game-over').style.display !== 'flex') {
             ui.style.display = 'flex';
+            staminaUI.style.display = 'none';
         }
     });
 
-    let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false;
+    let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false, isRunning = false;
     let velocity = new THREE.Vector3();
     
-    const PLAYER_SPEED = 25.0; 
-    const STALKER_SPEED = PLAYER_SPEED * 1.01; 
+    // Stamina variables
+    let stamina = 100;
+    const maxStamina = 100;
+    
+    const NORMAL_SPEED = 25.0;
+    const SPRINT_SPEED = 35.0; // Thora zyada speed
+    const STALKER_BASE_SPEED = NORMAL_SPEED * 1.01;
 
     document.onkeydown = (e) => {
         if(e.code === 'KeyW') moveF = true;
@@ -123,6 +140,7 @@
         if(e.code === 'KeyD') moveR = true;
         if(e.code === 'Space' && canJump) { velocity.y = 7.5; canJump = false; }
         if(e.code === 'ShiftLeft') isCrouching = true;
+        if(e.code === 'ControlLeft' && stamina > 0) isRunning = true;
     };
     document.onkeyup = (e) => {
         if(e.code === 'KeyW') moveF = false;
@@ -130,6 +148,7 @@
         if(e.code === 'KeyA') moveL = false;
         if(e.code === 'KeyD') moveR = false;
         if(e.code === 'ShiftLeft') isCrouching = false;
+        if(e.code === 'ControlLeft') isRunning = false;
     };
 
     let lastTime = performance.now();
@@ -139,14 +158,27 @@
         const delta = (time - lastTime) / 1000;
 
         if (controls.isLocked) {
+            // Stamina Management
+            if (isRunning && (moveF || moveB || moveL || moveR) && stamina > 0) {
+                stamina -= 20 * delta; // Roughly 5 seconds of sprint
+                if (stamina <= 0) { stamina = 0; isRunning = false; }
+            } else {
+                if (stamina < maxStamina) stamina += 10 * delta; // Recovery speed
+            }
+            staminaBar.style.width = stamina + "%";
+
+            // Movement Speed Calculation
+            let currentSpeed = isRunning ? SPRINT_SPEED : NORMAL_SPEED;
+            if (isCrouching) currentSpeed *= 0.5;
+
             velocity.x -= velocity.x * 10 * delta;
             velocity.z -= velocity.z * 10 * delta;
             velocity.y -= 20 * delta; 
 
-            if (moveF) velocity.z -= PLAYER_SPEED * delta;
-            if (moveB) velocity.z += PLAYER_SPEED * delta;
-            if (moveL) velocity.x -= PLAYER_SPEED * delta;
-            if (moveR) velocity.x += PLAYER_SPEED * delta;
+            if (moveF) velocity.z -= currentSpeed * delta;
+            if (moveB) velocity.z += currentSpeed * delta;
+            if (moveL) velocity.x -= currentSpeed * delta;
+            if (moveR) velocity.x += currentSpeed * delta;
 
             controls.moveRight(velocity.x * delta);
             controls.moveForward(-velocity.z * delta);
@@ -157,15 +189,13 @@
 
             if (player.position.y < tH) { velocity.y = 0; player.position.y = tH; canJump = true; }
 
-            // Stalker Movement - 1% faster
-            const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
-            dir.y = 0; 
-            dir.normalize();
-            stalker.position.x += dir.x * (STALKER_SPEED * 0.13) * delta; 
-            stalker.position.z += dir.z * (STALKER_SPEED * 0.13) * delta;
+            // Stalker (Always 1% faster than normal speed)
+            const stalkerDir = new THREE.Vector3().subVectors(player.position, stalker.position);
+            stalkerDir.y = 0; stalkerDir.normalize();
+            stalker.position.x += stalkerDir.x * (STALKER_BASE_SPEED * 0.13) * delta; 
+            stalker.position.z += stalkerDir.z * (STALKER_BASE_SPEED * 0.13) * delta;
             stalker.lookAt(player.position.x, 1.75, player.position.z);
 
-            // Distance check
             if(player.position.distanceTo(stalker.position) < 1.8) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
