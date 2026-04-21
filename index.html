@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | BRIGHT & CLEAR</title>
+    <title>VOID AURA | FULL BRIGHT LOCK</title>
     <style>
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background-color: #eee; 
+            overflow: hidden; background-color: #fff; 
             color: #000; font-family: sans-serif; cursor: none;
         }
         #game-container { position: relative; width: 100%; height: 100vh; }
         
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 1); display: flex; flex-direction: column; 
+            background: white; display: flex; flex-direction: column; 
             justify-content: center; align-items: center; z-index: 10000; cursor: auto;
         }
 
@@ -29,7 +29,7 @@
 
         #stamina-bar {
             position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-            width: 220px; height: 10px; background: #ccc; border: 1px solid #ff4400; border-radius: 5px;
+            width: 220px; height: 10px; background: #eee; border: 1px solid #ff4400; border-radius: 5px;
         }
         #stamina-fill { width: 100%; height: 100%; background: #ff4400; }
 
@@ -38,15 +38,15 @@
             background: #fff; display: none; z-index: 20000;
             flex-direction: column; justify-content: center; align-items: center; cursor: auto;
         }
-        #start-btn { padding: 15px 50px; cursor: pointer; background: #ff4400; border: none; color: #fff; font-weight: bold; font-size: 1.2rem; }
+        #start-btn { padding: 18px 60px; cursor: pointer; background: #ff4400; border: none; color: #fff; font-weight: bold; font-size: 1.4rem; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="ui-overlay">
-        <h1 style="color: #ff4400; font-size: 3rem; margin-bottom: 10px;">VOID AURA</h1>
-        <p style="margin-bottom: 30px;">SPACE: Jump | CTRL: Run | SHIFT: Crouch</p>
+        <h1 style="color: #ff4400; font-size: 3.5rem; margin-bottom: 5px;">VOID AURA</h1>
+        <p style="margin-bottom: 30px; color: #666;">BRIGHT MODE ENABLED | FULLSCREEN LOCK</p>
         <button id="start-btn">PLAY</button>
     </div>
 
@@ -54,8 +54,8 @@
     <div id="stamina-bar"><div id="stamina-fill"></div></div>
     
     <div id="game-over">
-        <h1 style="color: red; font-size: 3rem;">MASHED!</h1>
-        <button onclick="location.reload()" style="padding: 10px 30px; cursor: pointer;">RETRY</button>
+        <h1 style="color: red; font-size: 4rem;">MASHED!</h1>
+        <button onclick="location.reload()" style="padding: 12px 40px; cursor: pointer; font-size: 1.2rem;">RETRY</button>
     </div>
 </div>
 
@@ -64,8 +64,8 @@
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xdddddd); // Wapis Bright Background
-    scene.fog = new THREE.Fog(0xdddddd, 10, 120);
+    scene.background = new THREE.Color(0xffffff); // Poora Map Bright White
+    scene.fog = new THREE.Fog(0xffffff, 50, 200); // Door tak visibility
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -77,21 +77,21 @@
     scene.add(player);
     player.add(camera);
 
-    // --- BRIGHT LIGHTING ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    // --- MAXIMUM BRIGHTNESS LIGHTING ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); // Full Bright
     scene.add(ambientLight);
     
-    const sunLight = new THREE.DirectionalLight(0xffffff, 0.4);
-    sunLight.position.set(5, 15, 5);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    sunLight.position.set(0, 50, 0);
     scene.add(sunLight);
 
-    const grid = new THREE.GridHelper(1000, 60, 0xaaaaaa, 0xcccccc);
+    const grid = new THREE.GridHelper(2000, 100, 0xcccccc, 0xeeeeee);
     scene.add(grid);
 
-    // --- POTATO (VISIBILITY ON) ---
+    // --- POTATO (VERY VISIBLE) ---
     const potatoGeo = new THREE.SphereGeometry(1.6, 32, 32);
     potatoGeo.scale(1.2, 1.5, 1.1);
-    const potatoMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.5 });
+    const potatoMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.4 });
     const stalker = new THREE.Mesh(potatoGeo, potatoMat);
     stalker.position.set(0, 1.6, 35);
     scene.add(stalker);
@@ -100,9 +100,15 @@
     const startBtn = document.getElementById('start-btn');
 
     startBtn.onclick = () => {
+        // Strict Fullscreen Protocol to stop folders/taskbar leaking
         const doc = document.documentElement;
-        if (doc.requestFullscreen) doc.requestFullscreen();
-        controls.lock();
+        if (doc.requestFullscreen) {
+            doc.requestFullscreen().then(() => {
+                controls.lock();
+            }).catch(err => {
+                controls.lock(); // Fallback if fullscreen fails
+            });
+        }
     };
 
     controls.addEventListener('lock', () => {
@@ -114,15 +120,21 @@
     let velocityY = 0;
     let canJump = false;
 
-    window.onkeydown = (e) => { keys[e.code] = true; };
+    window.onkeydown = (e) => { 
+        keys[e.code] = true; 
+        // Prevent default browser keys like F1, Alt, etc. from opening folders
+        if(e.altKey || e.code === 'F1') e.preventDefault();
+    };
     window.onkeyup = (e) => { keys[e.code] = false; };
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
         if (controls.isLocked) {
+            // Crouch (SHIFT)
             let targetHeight = keys['ShiftLeft'] ? 0.9 : 1.7;
             player.position.y += (targetHeight - player.position.y) * 0.15;
 
+            // Sprint (CTRL)
             let isRunning = (keys['ControlLeft'] || keys['ControlRight']) && stamina > 0;
             let speed = isRunning ? 0.28 : 0.14;
 
@@ -135,8 +147,9 @@
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
 
+            // Jump (SPACE)
             if (keys['Space'] && canJump) {
-                velocityY = 0.2;
+                velocityY = 0.22;
                 canJump = false;
             }
             player.position.y += velocityY;
@@ -148,13 +161,13 @@
                 canJump = true;
             }
 
-            // Potato Follow
+            // Potato AI
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
-            stalker.position.add(dir.multiplyScalar(0.075));
+            stalker.position.add(dir.multiplyScalar(0.08));
             stalker.lookAt(player.position.x, 1.6, player.position.z);
 
-            // Accurate Touch Death
+            // Accurate Touch Death Check
             if (player.position.distanceTo(stalker.position) < 2.5) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
