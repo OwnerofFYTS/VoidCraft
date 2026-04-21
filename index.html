@@ -1,173 +1,202 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | GREEN WORLD FIXED</title>
-    <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: sans-serif; cursor: none; }
-        #game-container { position: relative; width: 100%; height: 100vh; }
-        #ui-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; cursor: auto;
-        }
-        #crosshair {
-            position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; transform: translate(-50%, -50%); z-index: 5000; pointer-events: none;
-        }
-        #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; opacity: 0.8; }
-        #crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); }
-        #crosshair::after { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
-        
-        #stamina-bar {
-            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); width: 220px; height: 8px; background: #111; border: 1px solid #444; border-radius: 4px;
-        }
-        #stamina-fill { width: 100%; height: 100%; background: #4CAF50; transition: width 0.1s; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VOID AURA | GREEN WORLD FIXED</title>
 
-        #game-over {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; z-index: 20000; flex-direction: column; justify-content: center; align-items: center; cursor: auto;
-        }
-        #start-btn { padding: 15px 50px; cursor: pointer; background: #4CAF50; border: none; color: #fff; font-weight: bold; font-size: 1.2rem; border-radius: 5px; }
-    </style>
+<style>
+body, html { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; color:#fff; font-family:sans-serif; cursor:none; }
+#game-container { position:relative; width:100%; height:100vh; }
+
+#ui-overlay {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    background:#000; display:flex; flex-direction:column;
+    justify-content:center; align-items:center; z-index:10000; cursor:auto;
+}
+
+#crosshair {
+    position:absolute; top:50%; left:50%; width:16px; height:16px;
+    transform:translate(-50%, -50%); z-index:5000; pointer-events:none;
+}
+#crosshair::before, #crosshair::after { content:''; position:absolute; background:#fff; opacity:0.8; }
+#crosshair::before { top:50%; left:0; width:100%; height:2px; transform:translateY(-50%); }
+#crosshair::after { left:50%; top:0; width:2px; height:100%; transform:translateX(-50%); }
+
+#stamina-bar {
+    position:fixed; bottom:50px; left:50%; transform:translateX(-50%);
+    width:220px; height:8px; background:#111; border:1px solid #444;
+}
+#stamina-fill { width:100%; height:100%; background:#4CAF50; }
+
+#game-over {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    background:#000; display:none; z-index:20000;
+    flex-direction:column; justify-content:center; align-items:center;
+}
+
+#start-btn { padding:15px 50px; cursor:pointer; background:#4CAF50; border:none; color:#fff; font-size:1.2rem; }
+</style>
 </head>
+
 <body>
 
 <div id="game-container">
-    <div id="ui-overlay">
-        <h1 style="letter-spacing: 10px; color: #4CAF50;">VOID AURA</h1>
-        <p style="color: #666; margin-bottom: 25px;">SHIFT: Run | C: Crouch | SPACE: Jump</p>
-        <button id="start-btn">PLAY GREEN WORLD</button>
-    </div>
-    <div id="crosshair"></div>
-    <div id="stamina-bar"><div id="stamina-fill"></div></div>
-    <div id="game-over">
-        <h1 style="color: #ff4444; font-size: 3rem;">MASHED!</h1>
-        <button onclick="location.reload()" style="padding: 10px 30px; cursor: pointer;">RETRY</button>
-    </div>
+<div id="ui-overlay">
+<h1 style="letter-spacing:10px; color:#4CAF50;">VOID AURA</h1>
+<p style="color:#666;">SHIFT: Run | C: Crouch | SPACE: Jump</p>
+<button id="start-btn">PLAY GREEN WORLD</button>
+</div>
+
+<div id="crosshair"></div>
+<div id="stamina-bar"><div id="stamina-fill"></div></div>
+
+<div id="game-over">
+<h1 style="color:#ff4444;">MASHED!</h1>
+<button onclick="location.reload()">RETRY</button>
+</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 10, 80);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.Fog(0x000000, 10, 100);
 
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.getElementById('game-container').appendChild(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.getElementById('game-container').appendChild(renderer.domElement);
 
-    const player = new THREE.Group();
-    player.position.set(25, 1.7, 25); 
-    scene.add(player);
-    player.add(camera);
+const player = new THREE.Group();
+player.position.set(40,1.7,40);
+scene.add(player);
+player.add(camera);
 
-    // Light
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-    sun.position.set(25, 50, 25);
-    scene.add(sun);
+scene.add(new THREE.AmbientLight(0xffffff,0.7));
+const sun = new THREE.DirectionalLight(0xffffff,0.8);
+sun.position.set(40,50,40);
+scene.add(sun);
 
-    // --- BIG GREEN GRASS MAP ---
-    const mapSize = 60; // Thoda aur bara map
-    const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-    const instancedMesh = new THREE.InstancedMesh(cubeGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), mapSize * mapSize);
-    
-    let idx = 0;
-    const dummy = new THREE.Object3D();
-    const color = new THREE.Color();
-    for(let x = 0; x < mapSize; x++) {
-        for(let z = 0; z < mapSize; z++) {
-            dummy.position.set(x, 0, z);
-            dummy.updateMatrix();
-            instancedMesh.setMatrixAt(idx, dummy.matrix);
-            // Green grass color range
-            const g = 0.4 + Math.random() * 0.2;
-            color.setRGB(g * 0.1, g, g * 0.1);
-            instancedMesh.setColorAt(idx, color);
-            idx++;
-        }
-    }
-    scene.add(instancedMesh);
+/* MAP */
+const mapSize = 80;
+const geo = new THREE.BoxGeometry(1,1,1);
+const mesh = new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial(),mapSize*mapSize);
 
-    // --- POTATO ---
-    const potatoGeo = new THREE.SphereGeometry(1.5, 32, 32);
-    potatoGeo.scale(1.2, 1.5, 1.1);
-    const stalker = new THREE.Mesh(potatoGeo, new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
-    stalker.position.set(5, 1.6, 5);
-    scene.add(stalker);
+let i=0;
+const dummy = new THREE.Object3D();
+const color = new THREE.Color();
 
-    const controls = new THREE.PointerLockControls(camera, document.body);
-    document.getElementById('start-btn').onclick = () => {
-        document.documentElement.requestFullscreen().catch(() => {});
-        controls.lock();
-    };
+for(let x=0;x<mapSize;x++){
+for(let z=0;z<mapSize;z++){
+dummy.position.set(x,0,z);
+dummy.updateMatrix();
+mesh.setMatrixAt(i,dummy.matrix);
 
-    controls.addEventListener('lock', () => { document.getElementById('ui-overlay').style.display = 'none'; });
+let g=0.4+Math.random()*0.2;
+color.setRGB(g*0.1,g,g*0.1);
+mesh.setColorAt(i,color);
+i++;
+}}
+scene.add(mesh);
 
-    let keys = {};
-    let stamina = 100;
-    let velocityY = 0;
-    let canJump = false;
+/* BORDER WALL */
+const wallMat = new THREE.MeshStandardMaterial({color:0xff2222});
+const wallHeight = 3;
 
-    window.onkeydown = (e) => { 
-        keys[e.code] = true; 
-        if(e.shiftKey || e.code === 'KeyC') e.preventDefault(); 
-    };
-    window.onkeyup = (e) => { keys[e.code] = false; };
+function createWall(x,z,w,h){
+const wall = new THREE.Mesh(new THREE.BoxGeometry(w,wallHeight,h),wallMat);
+wall.position.set(x,wallHeight/2,z);
+scene.add(wall);
+}
 
-    function gameLoop() {
-        requestAnimationFrame(gameLoop);
-        if (controls.isLocked) {
-            // Crouch
-            let targetHeight = keys['KeyC'] ? 0.8 : 1.7;
-            player.position.y += (targetHeight - player.position.y) * 0.15;
+createWall(mapSize/2,-1,mapSize,1);
+createWall(mapSize/2,mapSize,mapSize,1);
+createWall(-1,mapSize/2,1,mapSize);
+createWall(mapSize,mapSize/2,1,mapSize);
 
-            // Speed Balancing
-            let isRunning = keys['ShiftLeft'] && stamina > 0;
-            let speed = isRunning ? 0.26 : 0.125; // Sprint is much faster than walk
+/* POTATO */
+const potatoGeo = new THREE.SphereGeometry(1.5,32,32);
+potatoGeo.scale(1.2,1.5,1.1);
 
-            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) stamina -= 0.6;
-            else if (stamina < 100) stamina += 0.35;
-            document.getElementById('stamina-fill').style.width = stamina + "%";
+const stalker = new THREE.Mesh(potatoGeo,new THREE.MeshStandardMaterial({color:0x8B4513}));
+stalker.position.set(5,2.2,5); // FIXED HEIGHT
+scene.add(stalker);
 
-            // Save position for boundary check
-            let oldX = player.position.x;
-            let oldZ = player.position.z;
+const controls = new THREE.PointerLockControls(camera,document.body);
+document.getElementById('start-btn').onclick=()=>{
+document.documentElement.requestFullscreen().catch(()=>{});
+controls.lock();
+};
 
-            if (keys['KeyW']) controls.moveForward(speed);
-            if (keys['KeyS']) controls.moveForward(-speed);
-            if (keys['KeyA']) controls.moveRight(-speed);
-            if (keys['KeyD']) controls.moveRight(speed);
+controls.addEventListener('lock',()=>{
+document.getElementById('ui-overlay').style.display='none';
+});
 
-            // BOUNDARY LOCK (No Death, Just Stop)
-            if (player.position.x < 0 || player.position.x > mapSize-1) player.position.x = oldX;
-            if (player.position.z < 0 || player.position.z > mapSize-1) player.position.z = oldZ;
+let keys={}, stamina=100, velocityY=0, canJump=false;
 
-            // Jump
-            if (keys['Space'] && canJump) { velocityY = 0.18; canJump = false; }
-            player.position.y += velocityY;
-            if (player.position.y > targetHeight) velocityY -= 0.01;
-            else { player.position.y = targetHeight; velocityY = 0; canJump = true; }
+window.onkeydown=e=>keys[e.code]=true;
+window.onkeyup=e=>keys[e.code]=false;
 
-            // Potato AI Speed
-            const stalkerSpeed = 0.13; // 1% slightly faster than player walk (0.125)
-            const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
-            dir.y = 0; dir.normalize();
-            stalker.position.add(dir.multiplyScalar(stalkerSpeed));
-            stalker.lookAt(player.position.x, 1.6, player.position.z);
+function loop(){
+requestAnimationFrame(loop);
 
-            // Precise Kill Zone (Touch only)
-            if (player.position.distanceTo(stalker.position) < 2.2) {
-                document.getElementById('game-over').style.display = 'flex';
-                controls.unlock();
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
-        }
-        renderer.render(scene, camera);
-    }
-    gameLoop();
+if(controls.isLocked){
+
+let targetHeight = keys['KeyC'] ? 0.8 : 1.7;
+player.position.y += (targetHeight-player.position.y)*0.15;
+
+let run = keys['ShiftLeft'] && stamina>0;
+let speed = run ? 0.26 : 0.125;
+
+if(run && (keys['KeyW']||keys['KeyA']||keys['KeyS']||keys['KeyD'])) stamina-=0.6;
+else stamina+=0.3;
+
+document.getElementById('stamina-fill').style.width=stamina+"%";
+
+let oldX=player.position.x;
+let oldZ=player.position.z;
+
+if(keys['KeyW']) controls.moveForward(speed);
+if(keys['KeyS']) controls.moveForward(-speed);
+if(keys['KeyA']) controls.moveRight(-speed);
+if(keys['KeyD']) controls.moveRight(speed);
+
+/* BORDER LOCK */
+if(player.position.x<0||player.position.x>mapSize-1) player.position.x=oldX;
+if(player.position.z<0||player.position.z>mapSize-1) player.position.z=oldZ;
+
+/* JUMP */
+if(keys['Space'] && canJump){ velocityY=0.18; canJump=false; }
+player.position.y+=velocityY;
+
+if(player.position.y>targetHeight) velocityY-=0.01;
+else{ player.position.y=targetHeight; velocityY=0; canJump=true; }
+
+/* POTATO AI */
+const dir = new THREE.Vector3().subVectors(player.position,stalker.position);
+dir.y=0; dir.normalize();
+stalker.position.add(dir.multiplyScalar(0.13));
+
+/* FIXED DISTANCE (2D) */
+const dx = player.position.x - stalker.position.x;
+const dz = player.position.z - stalker.position.z;
+const dist = Math.sqrt(dx*dx + dz*dz);
+
+if(dist < 1.8){
+document.getElementById('game-over').style.display='flex';
+controls.unlock();
+}
+
+}
+
+renderer.render(scene,camera);
+}
+loop();
 </script>
 </body>
 </html>
+```
