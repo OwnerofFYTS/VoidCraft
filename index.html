@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VOID AURA</title>
+<title>VOID AURA FIXED</title>
 
 <style>
 body,html{margin:0;padding:0;overflow:hidden;background:#000;font-family:sans-serif;}
@@ -27,8 +27,8 @@ cursor:pointer;
 position:absolute;top:50%;left:50%;
 width:14px;height:14px;
 transform:translate(-50%,-50%);
-z-index:5;
 pointer-events:none;
+z-index:5;
 }
 #crosshair::before,#crosshair::after{
 content:'';position:absolute;background:#fff;
@@ -87,6 +87,7 @@ controls.addEventListener('lock',()=>{
 document.getElementById('ui').style.display='none';
 });
 
+/* GROUND */
 const ground=new THREE.Mesh(
 new THREE.PlaneGeometry(200,200),
 new THREE.MeshStandardMaterial({color:0x228B22})
@@ -94,31 +95,29 @@ new THREE.MeshStandardMaterial({color:0x228B22})
 ground.rotation.x=-Math.PI/2;
 scene.add(ground);
 
-/* RED BORDER WALL (STRONG COLLISION) */
+/* BORDER WALLS */
 function wall(x,z,w,d){
 const m=new THREE.Mesh(
-new THREE.BoxGeometry(w,3,d),
+new THREE.BoxGeometry(w,4,d),
 new THREE.MeshStandardMaterial({color:0xff0000})
 );
-m.position.set(x,1.5,z);
+m.position.set(x,2,z);
 scene.add(m);
 }
-wall(50,-1,100,1);
-wall(50,100,100,1);
-wall(-1,50,1,100);
-wall(100,50,1,100);
+wall(50,-2,100,2);
+wall(50,102,100,2);
+wall(-2,50,2,100);
+wall(102,50,2,100);
 
-/* POTATO (DIRTY TEXTURE LOOK) */
-const potatoGeo=new THREE.SphereGeometry(1.5,32,32);
-const potatoMat=new THREE.MeshStandardMaterial({
-color:0x8B5A2B,
-roughness:1,
-metalness:0
-});
-const potato=new THREE.Mesh(potatoGeo,potatoMat);
+/* POTATO */
+const potato=new THREE.Mesh(
+new THREE.SphereGeometry(1.5,32,32),
+new THREE.MeshStandardMaterial({color:0x6b3e1d})
+);
 potato.position.set(10,2.2,10);
 scene.add(potato);
 
+/* INPUT */
 let keys={};
 onkeydown=e=>keys[e.code]=true;
 onkeyup=e=>keys[e.code]=false;
@@ -134,15 +133,16 @@ requestAnimationFrame(animate);
 
 if(controls.isLocked && !dead){
 
-/* SPEED */
-let sprint = keys['ShiftLeft'] && stamina>0;
-let speed = sprint ? 0.3 : 0.15;
+let sprint=keys['ShiftLeft'] && stamina>0;
+let speed=sprint?0.3:0.15;
 
-/* STAMINA (≈12 SEC FULL REGEN) */
+/* STAMINA FIX */
 if(sprint && (keys['KeyW']||keys['KeyA']||keys['KeyS']||keys['KeyD'])){
-stamina -= 0.6;
+stamina -= 0.9;
 }else{
-stamina += 0.15; // slow regen FIX
+if(!keys['ShiftLeft']){
+stamina += 0.12; // only refill when shift NOT held
+}
 }
 stamina=Math.max(0,Math.min(100,stamina));
 document.getElementById('fill').style.width=stamina+"%";
@@ -156,15 +156,16 @@ if(keys['KeyS']) controls.moveForward(-speed);
 if(keys['KeyA']) controls.moveRight(-speed);
 if(keys['KeyD']) controls.moveRight(speed);
 
-/* HARD BORDER COLLISION */
-if(player.position.x<2||player.position.x>98) player.position.x=oldX;
-if(player.position.z<2||player.position.z>98) player.position.z=oldZ;
+/* HARD BORDER (NO ESCAPE) */
+player.position.x=Math.max(3,Math.min(97,player.position.x));
+player.position.z=Math.max(3,Math.min(97,player.position.z));
 
 /* JUMP */
 if(keys['Space'] && canJump){
 velocityY=0.22;
 canJump=false;
 }
+
 player.position.y += velocityY;
 velocityY -= 0.01;
 
@@ -174,7 +175,7 @@ velocityY=0;
 canJump=true;
 }
 
-/* POTATO FOLLOW AI */
+/* AI */
 let playerPos=new THREE.Vector3();
 controls.getObject().getWorldPosition(playerPos);
 
@@ -183,9 +184,9 @@ dir.y=0;
 dir.normalize();
 
 let dist=potato.position.distanceTo(playerPos);
-let speedAI=dist>8?0.25:0.18;
+let aiSpeed=dist>6?0.25:0.18;
 
-potato.position.add(dir.multiplyScalar(speedAI));
+potato.position.add(dir.multiplyScalar(aiSpeed));
 
 potato.lookAt(playerPos);
 
@@ -193,8 +194,7 @@ potato.lookAt(playerPos);
 if(dist<1.4){
 dead=true;
 controls.unlock();
-document.getElementById('ui').style.display='flex';
-document.getElementById('ui').innerHTML="<h1 style='color:red'>MASHED!</h1><button onclick='location.reload()'>RETRY</button>";
+location.reload();
 }
 
 }
