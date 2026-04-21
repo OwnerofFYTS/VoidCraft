@@ -150,35 +150,31 @@ stamina+=0.12;
 stamina=Math.max(0,Math.min(100,stamina));
 document.getElementById('fill').style.width=stamina+"%";
 
-/* MOVEMENT (DIRECTION FIXED) */
-let moveDir = new THREE.Vector3();
+/* MOVEMENT FIX: AB BORDER SE BAHAR NAHI JAYEGA */
 let forward = new THREE.Vector3();
-let side = new THREE.Vector3();
-
-// Get forward direction based on camera
 camera.getWorldDirection(forward);
 forward.y = 0;
 forward.normalize();
 
-// Get side direction
+let side = new THREE.Vector3();
 side.crossVectors(camera.up, forward).normalize();
 
-let direction = new THREE.Vector3(0,0,0);
-if(keys['KeyW']) direction.add(forward);
-if(keys['KeyS']) direction.sub(forward);
-if(keys['KeyA']) direction.add(side);
-if(keys['KeyD']) direction.sub(side);
+let moveVec = new THREE.Vector3(0, 0, 0);
+if(keys['KeyW']) moveVec.add(forward);
+if(keys['KeyS']) moveVec.sub(forward);
+if(keys['KeyA']) moveVec.add(side);
+if(keys['KeyD']) moveVec.sub(side);
 
-if(direction.length() > 0) {
-    direction.normalize().multiplyScalar(speed);
+if(moveVec.length() > 0){
+    moveVec.normalize().multiplyScalar(speed);
 }
 
-let newX = player.position.x + direction.x;
-let newZ = player.position.z + direction.z;
+let nextX = player.position.x + moveVec.x;
+let nextZ = player.position.z + moveVec.z;
 
-/* HARD WALL BLOCK (BORDER LIMITS) */
-if(newX > 1 && newX < 99) player.position.x = newX;
-if(newZ > 1 && newZ < 99) player.position.z = newZ;
+/* STRICT BORDER COLLISION (0 to 100 Range) */
+if(nextX > 1 && nextX < 99) player.position.x = nextX;
+if(nextZ > 1 && nextZ < 99) player.position.z = nextZ;
 
 /* JUMP */
 if(keys['Space'] && canJump){
