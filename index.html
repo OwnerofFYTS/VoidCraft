@@ -1,33 +1,24 @@
-```html id="fix-final-void"
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VOID AURA | FINAL FIX</title>
-
+<title>VOID AURA FIXED</title>
 <style>
-body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;cursor:none;}
-#ui-overlay{position:absolute;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#000;z-index:10000;}
-#crosshair{position:absolute;top:50%;left:50%;width:16px;height:16px;transform:translate(-50%,-50%);}
-#crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff;}
-#crosshair::before{top:50%;width:100%;height:2px;}
-#crosshair::after{left:50%;height:100%;width:2px;}
-#game-over{position:absolute;width:100%;height:100%;display:none;justify-content:center;align-items:center;flex-direction:column;background:#000;z-index:20000;}
+body,html{margin:0;padding:0;overflow:hidden;background:#000;}
+#ui{position:absolute;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#000;z-index:10;color:white;}
+#gameover{position:absolute;width:100%;height:100%;display:none;justify-content:center;align-items:center;flex-direction:column;background:#000;color:red;z-index:20;}
 </style>
 </head>
-
 <body>
 
-<div id="ui-overlay">
+<div id="ui">
 <h1 style="color:#4CAF50;">VOID AURA</h1>
-<button id="start-btn">PLAY</button>
+<button id="start">PLAY</button>
 </div>
 
-<div id="crosshair"></div>
-
-<div id="game-over">
-<h1 style="color:red;">MASHED!</h1>
+<div id="gameover">
+<h1>MASHED!</h1>
 <button onclick="location.reload()">RETRY</button>
 </div>
 
@@ -35,13 +26,23 @@ body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
+/* SCENE */
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
+scene.background = new THREE.Color(0x111111);
 
+/* CAMERA */
 const camera = new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
-const renderer = new THREE.WebGLRenderer();
+
+/* RENDER */
+const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
+
+/* LIGHT (IMPORTANT FIX FOR BLACK SCREEN) */
+scene.add(new THREE.AmbientLight(0xffffff,0.8));
+const light = new THREE.DirectionalLight(0xffffff,1);
+light.position.set(20,40,20);
+scene.add(light);
 
 /* PLAYER */
 const player = new THREE.Group();
@@ -49,109 +50,94 @@ player.position.set(40,1.7,40);
 scene.add(player);
 player.add(camera);
 
-scene.add(new THREE.AmbientLight(0xffffff,0.8));
-
-/* MAP */
-const mapSize = 80;
-const geo = new THREE.BoxGeometry(1,1,1);
-const mat = new THREE.MeshStandardMaterial();
-const mesh = new THREE.InstancedMesh(geo,mat,mapSize*mapSize);
-
-let i=0;
-const dummy=new THREE.Object3D();
-const color=new THREE.Color();
-
-for(let x=0;x<mapSize;x++){
-for(let z=0;z<mapSize;z++){
-dummy.position.set(x,0,z);
-dummy.updateMatrix();
-mesh.setMatrixAt(i,dummy.matrix);
-
-let g=0.5+Math.random()*0.2;
-color.setRGB(0.1,g,0.1);
-mesh.setColorAt(i,color);
-i++;
-}}
-scene.add(mesh);
-
-/* BORDER WALLS (VISIBLE) */
-const wallMat = new THREE.MeshStandardMaterial({color:0xff0000});
-const walls = [];
-
-function createWall(x,z,w,d){
-const m = new THREE.Mesh(new THREE.BoxGeometry(w,3,d),wallMat);
-m.position.set(x,1.5,z);
-scene.add(m);
-walls.push(m);
-}
-
-createWall(mapSize/2,-1,mapSize,1);
-createWall(mapSize/2,mapSize,mapSize,1);
-createWall(-1,mapSize/2,1,mapSize);
-createWall(mapSize,mapSize/2,1,mapSize);
-
-/* POTATO */
-const geoP = new THREE.SphereGeometry(1.5,32,32);
-geoP.scale(1.2,1.5,1.1);
-
-const stalker = new THREE.Mesh(geoP,new THREE.MeshStandardMaterial({color:0x8B4513}));
-const stalkerHeight = 1.5 * 1.5;
-stalker.position.set(5,stalkerHeight,5);
-scene.add(stalker);
-
 /* CONTROLS */
 const controls = new THREE.PointerLockControls(camera,document.body);
-document.getElementById('start-btn').onclick=()=>controls.lock();
-controls.addEventListener('lock',()=>document.getElementById('ui-overlay').style.display='none');
+document.getElementById('start').onclick=()=>{
+controls.lock();
+};
+controls.addEventListener('lock',()=>{
+document.getElementById('ui').style.display='none';
+});
 
+/* GROUND (VISIBLE FIX) */
+const ground = new THREE.Mesh(
+new THREE.PlaneGeometry(200,200),
+new THREE.MeshStandardMaterial({color:0x228B22})
+);
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
+
+/* BORDER WALLS */
+const wallMat = new THREE.MeshStandardMaterial({color:0xff0000});
+function wall(x,z,w,d){
+const m=new THREE.Mesh(new THREE.BoxGeometry(w,3,d),wallMat);
+m.position.set(x,1.5,z);
+scene.add(m);
+}
+
+wall(50,-1,100,1);
+wall(50,100,100,1);
+wall(-1,50,1,100);
+wall(100,50,1,100);
+
+/* POTATO */
+const potato = new THREE.Mesh(
+new THREE.SphereGeometry(1.5,32,32),
+new THREE.MeshStandardMaterial({color:0x8B4513})
+);
+
+/* FIX HEIGHT (NO SINKING) */
+potato.position.set(5,2.2,5);
+scene.add(potato);
+
+/* INPUT */
 let keys={};
-
 onkeydown=e=>keys[e.code]=true;
 onkeyup=e=>keys[e.code]=false;
 
-function loop(){
-requestAnimationFrame(loop);
+let dead=false;
 
-if(controls.isLocked){
+/* LOOP */
+function animate(){
+requestAnimationFrame(animate);
 
-let speed = keys['ShiftLeft'] ? 0.26 : 0.13;
+if(controls.isLocked && !dead){
 
-/* SAVE OLD POS (for collision) */
-let oldX = player.position.x;
-let oldZ = player.position.z;
+let speed=keys['ShiftLeft']?0.26:0.13;
 
-/* MOVEMENT */
+let oldX=player.position.x;
+let oldZ=player.position.z;
+
 if(keys['KeyW']) controls.moveForward(speed);
 if(keys['KeyS']) controls.moveForward(-speed);
 if(keys['KeyA']) controls.moveRight(-speed);
 if(keys['KeyD']) controls.moveRight(speed);
 
-/* 🔥 HARD BORDER COLLISION (CANNOT CROSS) */
-if(player.position.x < 1 || player.position.x > mapSize-2) player.position.x = oldX;
-if(player.position.z < 1 || player.position.z > mapSize-2) player.position.z = oldZ;
+/* BORDER BLOCK */
+if(player.position.x<1||player.position.x>99) player.position.x=oldX;
+if(player.position.z<1||player.position.z>99) player.position.z=oldZ;
 
 /* AI */
-const dir = new THREE.Vector3().subVectors(player.position,stalker.position);
+let dir=new THREE.Vector3().subVectors(player.position,potato.position);
 dir.y=0;
 dir.normalize();
-stalker.position.add(dir.multiplyScalar(0.13));
+potato.position.add(dir.multiplyScalar(0.13));
 
-/* 🔥 PERFECT CLOSE CONTACT ONLY */
-const dx = player.position.x - stalker.position.x;
-const dz = player.position.z - stalker.position.z;
-const dist = Math.sqrt(dx*dx + dz*dz);
+/* FIXED HITBOX (NO RANDOM DEATH) */
+let dx=player.position.x-potato.position.x;
+let dz=player.position.z-potato.position.z;
+let dist=Math.sqrt(dx*dx+dz*dz);
 
-// tighter hitbox (no more far death)
-if(dist < 1.2){
-document.getElementById('game-over').style.display='flex';
+if(dist<1.2){
+dead=true;
 controls.unlock();
+document.getElementById('gameover').style.display='flex';
 }
-
 }
 
 renderer.render(scene,camera);
 }
-loop();
+animate();
 </script>
 
 </body>
