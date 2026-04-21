@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | THE ABSOLUTE RE-FIX</title>
+    <title>VOID AURA | GREEN WORLD</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: sans-serif; cursor: none; }
-        #game-container { position: relative; width: 100%; height: 100vh; background-color: #000; }
+        #game-container { position: relative; width: 100%; height: 100vh; }
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; cursor: auto;
@@ -17,28 +17,30 @@
         #crosshair::before, #crosshair::after { content: ''; position: absolute; background: #fff; opacity: 0.8; }
         #crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); }
         #crosshair::after { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); }
+        
         #stamina-bar {
-            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); width: 200px; height: 6px; background: #111; border: 1px solid #444; border-radius: 5px;
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%); width: 220px; height: 8px; background: #111; border: 1px solid #444; border-radius: 4px;
         }
-        #stamina-fill { width: 100%; height: 100%; background: #fff; transition: width 0.1s; }
+        #stamina-fill { width: 100%; height: 100%; background: #4CAF50; transition: width 0.1s; }
+
         #game-over {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; z-index: 20000; flex-direction: column; justify-content: center; align-items: center; cursor: auto;
         }
-        #start-btn { padding: 15px 50px; cursor: pointer; background: #fff; border: none; color: #000; font-weight: bold; font-size: 1.2rem; }
+        #start-btn { padding: 15px 50px; cursor: pointer; background: #4CAF50; border: none; color: #fff; font-weight: bold; font-size: 1.2rem; border-radius: 5px; }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="ui-overlay">
-        <h1 style="letter-spacing: 12px; margin-bottom: 5px;">VOID AURA</h1>
-        <p style="color: #666; margin-bottom: 30px;">RED BLOCK FULLY DELETED | PRO CONTROLS | C to Crouch | SHIFT to Run</p>
-        <button id="start-btn">START WORLD</button>
+        <h1 style="letter-spacing: 10px; color: #4CAF50;">VOID AURA</h1>
+        <p style="color: #666; margin-bottom: 25px;">SHIFT: Run | C: Crouch | SPACE: Jump</p>
+        <button id="start-btn">START SURVIVAL</button>
     </div>
     <div id="crosshair"></div>
     <div id="stamina-bar"><div id="stamina-fill"></div></div>
     <div id="game-over">
-        <h1 style="color: #fff; font-size: 3rem;">MASHED</h1>
+        <h1 style="color: #ff4444; font-size: 3rem;">MASHED!</h1>
         <button onclick="location.reload()" style="padding: 10px 30px; cursor: pointer;">RETRY</button>
     </div>
 </div>
@@ -48,8 +50,8 @@
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000); // Strict Black
-    scene.fog = new THREE.Fog(0x000000, 1, 60);
+    scene.background = new THREE.Color(0x000000);
+    scene.fog = new THREE.Fog(0x000000, 5, 80);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -57,40 +59,35 @@
     document.getElementById('game-container').appendChild(renderer.domElement);
 
     const player = new THREE.Group();
-    // Center in 32x32 world
-    player.position.set(16, 1.7, 16); 
+    player.position.set(25, 1.7, 25); 
     scene.add(player);
     player.add(camera);
 
-    // --- BRIGHT LIGHTING FOR VISIBILITY ---
-    scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.75);
-    sun.position.set(16, 40, 16);
+    // --- BRIGHT LIGHTING ---
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+    sun.position.set(25, 50, 25);
     scene.add(sun);
 
-    // --- 32x32 CUBE WORLD (Red Block Deleted) ---
+    // --- BIG GREEN GRASS MAP (50x50 for extra space) ---
+    const mapSize = 50;
     const cubeGeo = new THREE.BoxGeometry(1, 1, 1);
-    const instancedMesh = new THREE.InstancedMesh(
-        cubeGeo, 
-        new THREE.MeshStandardMaterial({ roughness: 0.8 }), 
-        32 * 32
-    );
-
-    let instanceId = 0;
+    const instancedMesh = new THREE.InstancedMesh(cubeGeo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), mapSize * mapSize);
+    
+    let idx = 0;
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
-    for (let x = 0; x < 32; x++) {
-        for (let z = 0; z < 32; z++) {
+    for(let x = 0; x < mapSize; x++) {
+        for(let z = 0; z < mapSize; z++) {
             dummy.position.set(x, 0, z);
             dummy.updateMatrix();
-            instancedMesh.setMatrixAt(instanceId, dummy.matrix);
+            instancedMesh.setMatrixAt(idx, dummy.matrix);
             
-            // Random Cube Color (Bright Grey Shades)
-            const brightness = 0.25 + Math.random() * 0.15;
-            color.setRGB(brightness, brightness, brightness);
-            instancedMesh.setColorAt(instanceId, color);
-            
-            instanceId++;
+            // Green Grass Shades
+            const g = 0.3 + Math.random() * 0.2;
+            color.setRGB(g * 0.2, g, g * 0.2);
+            instancedMesh.setColorAt(idx, color);
+            idx++;
         }
     }
     scene.add(instancedMesh);
@@ -98,17 +95,9 @@
     // --- POTATO ---
     const potatoGeo = new THREE.SphereGeometry(1.5, 32, 32);
     potatoGeo.scale(1.2, 1.5, 1.1);
-    const potatoMat = new THREE.MeshStandardMaterial({ 
-        color: 0x8B4513, // Standard Potato Brown
-        roughness: 0.6
-    });
-    const stalker = new THREE.Mesh(potatoGeo, potatoMat);
-    stalker.position.set(5, 1.6, 5); // Start far away
+    const stalker = new THREE.Mesh(potatoGeo, new THREE.MeshStandardMaterial({ color: 0x8B4513 }));
+    stalker.position.set(5, 1.6, 5);
     scene.add(stalker);
-
-    // Dainty light following potato so it's always visible in dark
-    const pLight = new THREE.PointLight(0x663300, 2, 12);
-    stalker.add(pLight);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
     document.getElementById('start-btn').onclick = () => {
@@ -123,69 +112,53 @@
     let velocityY = 0;
     let canJump = false;
 
-    window.onkeydown = (e) => { 
-        keys[e.code] = true; 
-        if(e.code === 'KeyC' || e.shiftKey) e.preventDefault(); // Block Ctrl/Shift browser key leak
-    };
+    window.onkeydown = (e) => { keys[e.code] = true; if(e.shiftKey || e.code === 'KeyC') e.preventDefault(); };
     window.onkeyup = (e) => { keys[e.code] = false; };
 
     function gameLoop() {
         requestAnimationFrame(gameLoop);
         if (controls.isLocked) {
-            // Crouch (C Key)
+            // Crouch
             let targetHeight = keys['KeyC'] ? 0.8 : 1.7;
             player.position.y += (targetHeight - player.position.y) * 0.15;
 
-            // --- RE-ENGINEERED SPEED LOGIC ---
+            // Speed Logic
             let isRunning = keys['ShiftLeft'] && stamina > 0;
-            // Formulas: 
-            // Player Walking: 0.12, Running (Sprint): 0.28 (+2% approx relative to Walking)
-            // Potato: 0.121 (+1% relative to Player Walking)
             let playerWalkSpeed = 0.12;
-            let playerRunSpeed = 0.28; 
+            let playerRunSpeed = 0.25; 
             let speed = isRunning ? playerRunSpeed : playerWalkSpeed;
 
-            // Stamina Management
-            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) {
-                stamina = Math.max(0, stamina - 0.7); // Drains when moving
-            } else {
-                stamina = Math.min(100, stamina + 0.4); // Regenerates
-            }
+            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) stamina -= 0.6;
+            else if (stamina < 100) stamina += 0.3;
             document.getElementById('stamina-fill').style.width = stamina + "%";
 
-            // Movement
+            // Movement with Boundary Lock (Prevents going outside map)
+            let prevPos = player.position.clone();
             if (keys['KeyW']) controls.moveForward(speed);
             if (keys['KeyS']) controls.moveForward(-speed);
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
 
-            // Jump (SPACE)
-            if (keys['Space'] && canJump) {
-                velocityY = 0.18;
-                canJump = false;
-            }
-            player.position.y += velocityY;
-            if (player.position.y > targetHeight) {
-                velocityY -= 0.01; // Gravity
-            } else {
-                player.position.y = targetHeight;
-                velocityY = 0;
-                canJump = true;
+            // Boundary Check (Stay inside 0 to 50)
+            if (player.position.x < 0 || player.position.x > mapSize - 1 || player.position.z < 0 || player.position.z > mapSize - 1) {
+                player.position.copy(prevPos);
             }
 
-            // --- POTATO AI SPEED ---
-            const stalkerSpeed = 0.121; // Always 1% faster than player's standard walk
+            // Jump
+            if (keys['Space'] && canJump) { velocityY = 0.18; canJump = false; }
+            player.position.y += velocityY;
+            if (player.position.y > targetHeight) velocityY -= 0.01;
+            else { player.position.y = targetHeight; velocityY = 0; canJump = true; }
+
+            // Potato AI
+            const stalkerSpeed = 0.121; // 1% faster than player walk
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
             stalker.position.add(dir.multiplyScalar(stalkerSpeed));
             stalker.lookAt(player.position.x, 1.6, player.position.z);
 
-            // --- STRICT 2-METRE KILL ZONE RE-FIX ---
-            // Pehle random mr rha tha, ab precise math use ho rha hai:
-            const distance = player.position.distanceTo(stalker.position);
-            
-            // Touch Distance check (Potato wide is ~1.6, player wide is ~0.4, so ~2.0 is accurate contact)
-            if (distance < 2.2) { 
+            // Kill Zone (2 Metres)
+            if (player.position.distanceTo(stalker.position) < 2.2) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
                 if (document.exitFullscreen) document.exitFullscreen();
@@ -194,12 +167,6 @@
         renderer.render(scene, camera);
     }
     gameLoop();
-
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
 </script>
 </body>
 </html>
