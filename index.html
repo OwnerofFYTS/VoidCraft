@@ -28,6 +28,24 @@
         #reticle { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: #ffaa00; border-radius: 50%; transform: translate(-50%, -50%); display: none; z-index: 500; }
 
         #game-over { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(30, 15, 0, 0.95); display: none; z-index: 2000; flex-direction: column; justify-content: center; align-items: center; }
+
+        /* Inventory UI */
+        #inventory-ui {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 400px; background: rgba(20, 10, 0, 0.9);
+            border: 3px solid #630; display: none; z-index: 1500;
+            flex-direction: column; padding: 20px; box-shadow: 0 0 30px #000;
+        }
+        #inventory-ui h2 { text-align: center; color: #ffaa00; margin-top: 0; }
+        .inventory-slot {
+            width: 100%; height: 60px; background: rgba(0,0,0,0.5);
+            border: 1px solid #420; margin-bottom: 10px; cursor: pointer;
+            display: flex; align-items: center; padding: 0 10px; transition: 0.2s;
+        }
+        .inventory-slot:hover { background: rgba(100, 50, 0, 0.3); border-color: #ffaa00; }
+        .inventory-slot.empty { cursor: default; justify-content: center; color: #444; }
+        #inventory-ui p { text-align: center; font-size: 0.8rem; color: #666; margin-top: auto; }
+
     </style>
 </head>
 <body>
@@ -35,16 +53,24 @@
 <div id="game-wrapper">
     <div id="ui-layer">
         <h1>VOID AURA</h1>
-        <p style="color: #666; letter-spacing: 3px;">THE POTATO IS HUNGRY</p>
+        <p style="color: #666; letter-spacing: 3px;">THE POTATO HUNTS</p>
         <button id="play-button">PLAY</button>
     </div>
     <div id="stamina-container"><div id="stamina-bar"></div></div>
     <div id="game-over">
         <h1 style="color: #ffaa00;">MASHED!</h1>
-        <p>THE POTATO TOUCHED YOU</p>
+        <p>THE POTATO CAUGHT YOU</p>
         <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:#fff; padding:10px 20px; cursor:pointer; margin-top: 20px;">RESTART</button>
     </div>
     <div id="reticle"></div>
+
+    <div id="inventory-ui">
+        <h2>INVENTORY</h2>
+        <div class="inventory-slot empty" id="slot-1">EMPTY</div>
+        <div class="inventory-slot empty" id="slot-2">EMPTY</div>
+        <div class="inventory-slot empty" id="slot-3">EMPTY</div>
+        <p>Press 'G' to Close</p>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -65,28 +91,92 @@
     scene.add(player);
     player.add(camera);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.1));
-    const flashlight = new THREE.SpotLight(0xffeebb, 3, 45, Math.PI/4, 0.3);
-    camera.add(flashlight);
-    flashlight.target.position.set(0, 0, -1);
-    camera.add(flashlight.target);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
     const grid = new THREE.GridHelper(300, 100, 0x332200, 0x080500);
     scene.add(grid);
 
-    // --- NEW POTATO MODEL ---
-    const stalkerGeo = new THREE.SphereGeometry(1.5, 20, 20);
-    stalkerGeo.scale(1, 1.3, 0.9); // Potato shape
+    // Inventory & Flashlight Setup
+    let inventory = [];
+    let hasFlashlight = false;
+    let flashlightActive = false;
+    const flashlight = new THREE.SpotLight(0xffeebb, 0, 60, Math.PI/4.5, 0.3); // High intensity, long range
+    camera.add(flashlight);
+    flashlight.target.position.set(0, 0, -1);
+    camera.add(flashlight.target);
+
+    // Place flashlight in the scene
+    const flashlightModel = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 0.4, 8),
+        new THREE.MeshStandardMaterial({ color: 0x222, metalness: 0.8, roughness: 0.2 })
+    );
+    flashlightModel.position.set(10, 0.2, 10); // Example position
+    flashlightModel.rotation.x = Math.PI / 2;
+    scene.add(flashlightModel);
+
+    // --- REAL POTATO MODEL & TEXTURE ---
+    // Procedural Texture Generation for Potato Skin
+    function createPotatoTexture() {
+        const size = 512;
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext('2d');
+        
+        // Base Color
+        context.fillStyle = '#8b6b4c'; // Darker base brown
+        context.fillRect(0, 0, size, size);
+
+        // Bumps and blemishes
+        for (let i = 0; i < 5000; i++) {
+            const x = Math.random() * size;
+            const y = Math.random() * size;
+            const radius = Math.random() * 2 + 0.5;
+            
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2);
+            context.fillStyle = Math.random() > 0.5 ? '#6a4e32' : '#a38466'; // Darker/Lighter spots
+            context.fill();
+        }
+
+        // Eyes (spots)
+        context.fillStyle = '#4a3219'; // Very dark brown
+        for (let i = 0; i < 20; i++) {
+            context.beginPath();
+            context.arc(Math.random() * size, Math.random() * size, Math.random() * 4 + 2, 0, Math.PI * 2);
+            context.fill();
+        }
+
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    const stalkerGeo = new THREE.SphereGeometry(1.5, 32, 32); // Higher resolution
+    stalkerGeo.scale(1, 1.4, 0.9); // Potato shape
     const stalkerMat = new THREE.MeshStandardMaterial({ 
-        color: 0x7a5230, // Earthy potato brown
-        roughness: 1
+        map: createPotatoTexture(), // Assign the bumpy procedural texture
+        roughness: 1,
+        metalness: 0 // No egg shine
     });
     const stalker = new THREE.Mesh(stalkerGeo, stalkerMat);
     stalker.position.set(0, 1.5, 35); // Initial position
     scene.add(stalker);
 
+    // Maze/Environment to hide flashlight
+    const wallMat = new THREE.MeshStandardMaterial({color: 0x1a1100, roughness: 1});
+    const mazeWalls = [];
+    function addWall(w, h, d, x, y, z) {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
+        wall.position.set(x, y, z);
+        scene.add(wall);
+        mazeWalls.push(wall);
+    }
+    addWall(10, 4, 1, 5, 2, 5);
+    addWall(1, 4, 15, 0, 2, 12);
+    addWall(20, 4, 1, 10, 2, 19);
+
     const controls = new THREE.PointerLockControls(camera, document.body);
     const playBtn = document.getElementById('play-button');
+    const inventoryUI = document.getElementById('inventory-ui');
     
     playBtn.onclick = () => {
         controls.lock();
@@ -100,12 +190,21 @@
         document.getElementById('reticle').style.display = 'block';
     });
 
+    controls.addEventListener('unlock', () => {
+        if (!inventoryOpen) {
+             document.getElementById('ui-layer').style.display = 'flex';
+        }
+    });
+
     let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false, isRunning = false;
+    let inventoryOpen = false;
     let velocity = new THREE.Vector3();
     let stamina = 100;
     let headbobTimer = 0;
 
     document.onkeydown = (e) => {
+        if (inventoryOpen && e.code !== 'KeyG') return; // Only allow closing inventory
+
         if(e.code === 'KeyW') moveF = true;
         if(e.code === 'KeyS') moveB = true;
         if(e.code === 'KeyA') moveL = true;
@@ -113,6 +212,8 @@
         if(e.code === 'Space' && canJump) { velocity.y = 8; canJump = false; }
         if(e.code === 'ShiftLeft') isCrouching = true;
         if(e.code === 'ControlLeft') isRunning = true;
+        
+        if(e.code === 'KeyG') toggleInventory();
     };
     document.onkeyup = (e) => {
         if(e.code === 'KeyW') moveF = false;
@@ -122,6 +223,53 @@
         if(e.code === 'ShiftLeft') isCrouching = false;
         if(e.code === 'ControlLeft') isRunning = false;
     };
+
+    function toggleInventory() {
+        if (!controls.isLocked && !inventoryOpen) return; // Cant open if not playing
+
+        inventoryOpen = !inventoryOpen;
+        if (inventoryOpen) {
+            controls.unlock();
+            inventoryUI.style.display = 'flex';
+            updateInventoryUI();
+        } else {
+            controls.lock();
+            inventoryUI.style.display = 'none';
+        }
+    }
+
+    function updateInventoryUI() {
+        // Clear slots
+        for(let i=1; i<=3; i++) {
+            const slot = document.getElementById(`slot-${i}`);
+            slot.innerHTML = "EMPTY";
+            slot.classList.add('empty');
+            slot.onclick = null;
+        }
+
+        // Add items
+        inventory.forEach((item, index) => {
+            const slot = document.getElementById(`slot-${index+1}`);
+            slot.innerHTML = item.name;
+            slot.classList.remove('empty');
+            slot.onclick = () => useItem(item.id);
+        });
+    }
+
+    function useItem(itemId) {
+        if (itemId === 'flashlight') {
+            flashlightActive = !flashlightActive;
+            flashlight.intensity = flashlightActive ? 3.5 : 0; // High intensity when active
+            toggleInventory(); // Close inventory after use
+        }
+    }
+
+    function pickUpFlashlight() {
+        hasFlashlight = true;
+        inventory.push({ id: 'flashlight', name: 'FLASHLIGHT' });
+        scene.remove(flashlightModel); // Remove from scene
+        console.log("Flashlight Picked Up! Press 'G' to use.");
+    }
 
     let lastTime = performance.now();
     function animate() {
@@ -133,6 +281,11 @@
             const isMoving = (moveF || moveB || moveL || moveR);
             let currentSpeed = 25.0;
             let targetFOV = 75;
+
+            // Flashlight Pickup Check
+            if (!hasFlashlight && player.position.distanceTo(flashlightModel.position) < 1.5) {
+                pickUpFlashlight();
+            }
 
             // Running/Sprinting Logic
             if (isRunning && isMoving && stamina > 0) {
@@ -168,8 +321,16 @@
             if (moveL) velocity.x -= currentSpeed * delta;
             if (moveR) velocity.x += currentSpeed * delta;
 
+            // Simple Collision with Maze Walls
+            let oldPos = player.position.clone();
             controls.moveRight(velocity.x * delta);
             controls.moveForward(-velocity.z * delta);
+
+            for (let wall of mazeWalls) {
+                if (new THREE.Box3().setFromObject(wall).containsPoint(player.position)) {
+                    player.position.copy(oldPos); // Reset to old position
+                }
+            }
 
             let tH = isCrouching ? 0.8 : 1.7;
             player.position.y += (tH - player.position.y) * 0.1 + velocity.y * delta;
@@ -182,10 +343,9 @@
             stalker.position.z += dir.z * (25.5 * 0.13) * delta;
             stalker.lookAt(player.position.x, stalker.position.y, player.position.z);
             
-            // Touch Collision Fix
-            // Ab jaise hi potato player ke camera (1.7 height) ke touch hoga, game over.
+            // Kill Collision Check
             const distance = player.position.distanceTo(stalker.position);
-            if(distance < 1.8) { 
+            if(distance < 2.0) { 
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
             }
