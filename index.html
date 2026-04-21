@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | POTATO PROTOCOL</title>
+    <title>VOID AURA | RE-FIXED</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: sans-serif; }
         #game-container { position: relative; width: 100%; height: 100vh; }
@@ -16,28 +16,27 @@
 
         #hotbar {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; z-index: 9999;
+            display: flex; gap: 10px; z-index: 9999;
         }
         .slot {
-            width: 70px; height: 70px; background: rgba(20, 20, 20, 0.9);
+            width: 60px; height: 60px; background: rgba(30, 30, 30, 0.9);
             border: 2px solid #444; display: flex; justify-content: center;
             align-items: center; position: relative;
         }
         .slot.active { border-color: #ffaa00; box-shadow: 0 0 15px #ffaa00; }
-        .slot-num { position: absolute; top: 5px; left: 8px; font-size: 12px; color: #888; }
-        .item-icon { font-size: 2rem; }
+        .slot-num { position: absolute; top: 2px; left: 5px; font-size: 10px; color: #888; }
 
         #stamina-box {
-            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-            width: 200px; height: 8px; background: #111; border: 1px solid #444; z-index: 9999;
+            position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+            width: 180px; height: 6px; background: #111; border: 1px solid #ffaa00; z-index: 9999;
         }
-        #stamina-fill { width: 100%; height: 100%; background: #ffaa00; transition: width 0.1s; }
+        #stamina-fill { width: 100%; height: 100%; background: #ffaa00; }
 
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; border-radius: 50%; z-index: 5000; transform: translate(-50%, -50%); opacity: 0.5; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; border-radius: 50%; z-index: 5000; transform: translate(-50%, -50%); opacity: 0.4; }
         
         #game-over-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; display: none; z-index: 20000;
+            background: #100; display: none; z-index: 20000;
             flex-direction: column; justify-content: center; align-items: center;
         }
     </style>
@@ -46,12 +45,13 @@
 
 <div id="game-container">
     <div id="ui-overlay">
-        <h1 style="color: #ffaa00; letter-spacing: 10px;">VOID AURA</h1>
-        <button id="start-btn" style="padding: 15px 40px; background: none; border: 1px solid #ffaa00; color: #ffaa00; cursor: pointer;">PLAY</button>
+        <h1 style="color: #ffaa00; letter-spacing: 5px;">VOID AURA</h1>
+        <p style="color: #444;">W,A,S,D to Walk | SHIFT to Run | 1 for Flashlight</p>
+        <button id="start-btn" style="padding: 12px 35px; background: none; border: 1px solid #ffaa00; color: #ffaa00; cursor: pointer; margin-top: 20px;">START GAME</button>
     </div>
 
     <div id="hotbar">
-        <div class="slot" id="slot-1"><span class="slot-num">1</span><span class="item-icon">🔦</span></div>
+        <div class="slot" id="slot-1"><span class="slot-num">1</span><span style="font-size: 1.5rem;">🔦</span></div>
         <div class="slot" id="slot-2"><span class="slot-num">2</span></div>
         <div class="slot" id="slot-3"><span class="slot-num">3</span></div>
         <div class="slot" id="slot-4"><span class="slot-num">4</span></div>
@@ -61,8 +61,9 @@
     <div id="crosshair"></div>
     
     <div id="game-over-screen">
-        <h1 style="color: #ffaa00;">MASHED</h1>
-        <button onclick="location.reload()" style="padding: 10px 20px; color: #fff; background: none; border: 1px solid #fff; cursor: pointer;">RETRY</button>
+        <h1 style="color: #f00;">GAME OVER</h1>
+        <p>The Potato Caught You</p>
+        <button onclick="location.reload()" style="padding: 8px 20px; color: #fff; background: none; border: 1px solid #fff; cursor: pointer;">RESTART</button>
     </div>
 </div>
 
@@ -72,7 +73,7 @@
 <script>
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 1, 40);
+    scene.fog = new THREE.Fog(0x000000, 1, 35);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -84,36 +85,33 @@
     scene.add(player);
     player.add(camera);
 
-    // --- RE-ENGINEERED FLASHLIGHT ---
-    const torch = new THREE.SpotLight(0xffffff, 0, 100, Math.PI/6, 0.5, 1);
+    // --- FLASH LIGHT ---
+    const torch = new THREE.SpotLight(0xffffff, 0, 80, Math.PI/6, 0.4, 1);
     camera.add(torch);
-    torch.position.set(0, 0, 0);
     torch.target.position.set(0, 0, -1);
     camera.add(torch.target);
 
-    // Very low ambient so flashlight is essential
-    scene.add(new THREE.AmbientLight(0xffffff, 0.01));
-    const grid = new THREE.GridHelper(500, 100, 0x111111, 0x050505);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.02)); // Very dim environment
+    const grid = new THREE.GridHelper(500, 100, 0x111111, 0x080808);
     scene.add(grid);
 
-    // --- THE POTATO (BROWN & VISIBLE) ---
-    const potatoGeo = new THREE.SphereGeometry(1.5, 32, 32);
+    // --- VISIBLE POTATO ---
+    const potatoGeo = new THREE.SphereGeometry(1.4, 24, 24);
     potatoGeo.scale(1.2, 1.6, 1.1);
-    const potatoMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 1 });
+    const potatoMat = new THREE.MeshStandardMaterial({ 
+        color: 0x8B4513, 
+        emissive: 0x331a00, // Halki chamak taake andhere mein dikhe
+        roughness: 1 
+    });
     const stalker = new THREE.Mesh(potatoGeo, potatoMat);
-    stalker.position.set(0, 1.6, 25);
+    stalker.position.set(0, 1.5, 20); // Thoda kareeb start karega
     scene.add(stalker);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
     const startBtn = document.getElementById('start-btn');
 
-    startBtn.onclick = () => {
-        controls.lock();
-    };
-
-    controls.addEventListener('lock', () => {
-        document.getElementById('ui-overlay').style.display = 'none';
-    });
+    startBtn.onclick = () => { controls.lock(); };
+    controls.addEventListener('lock', () => { document.getElementById('ui-overlay').style.display = 'none'; });
 
     let keys = {};
     let stamina = 100;
@@ -133,7 +131,7 @@
         } else {
             activeSlot = n;
             document.getElementById(`slot-${n}`).classList.add('active');
-            if(n === 1) torch.intensity = 10; // Intense Light
+            if(n === 1) torch.intensity = 15; // High power
             else torch.intensity = 0;
         }
     }
@@ -145,31 +143,33 @@
         const delta = (time - lastT) / 1000;
 
         if (controls.isLocked) {
-            // Normal Player Speed
-            let isRunning = keys['ShiftLeft'] && stamina > 0;
-            let speed = isRunning ? 15 : 10; // Realistic walking/running
+            // Speed logic
+            let isRunning = (keys['ShiftLeft'] || keys['ShiftRight']) && stamina > 0;
+            let speed = isRunning ? 14 : 8; // Normal slow speeds
             
+            // Stamina drain
             if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) {
                 stamina = Math.max(0, stamina - 20 * delta);
             } else {
-                stamina = Math.min(100, stamina + 15 * delta);
+                stamina = Math.min(100, stamina + 12 * delta);
             }
             document.getElementById('stamina-fill').style.width = stamina + "%";
 
+            // Movement
             if (keys['KeyW']) controls.moveForward(speed * delta);
             if (keys['KeyS']) controls.moveForward(-speed * delta);
             if (keys['KeyA']) controls.moveRight(-speed * delta);
             if (keys['KeyD']) controls.moveRight(speed * delta);
 
-            // Normal Potato AI Speed
-            const stalkerSpeed = 4.0; // Slow but steady
+            // Potato AI
+            const stalkerSpeed = 3.5; // Constant slow speed
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
             stalker.position.x += dir.x * stalkerSpeed * delta; 
             stalker.position.z += dir.z * stalkerSpeed * delta;
-            stalker.lookAt(player.position.x, 1.6, player.position.z);
+            stalker.lookAt(player.position.x, 1.5, player.position.z);
 
-            // Kill Zone
+            // Game Over Collision
             if (player.position.distanceTo(stalker.position) < 2.0) {
                 document.getElementById('game-over-screen').style.display = 'flex';
                 controls.unlock();
