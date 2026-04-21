@@ -18,7 +18,6 @@
         h1 { font-size: 4rem; letter-spacing: 12px; margin: 0; color: #fff; text-shadow: 0 0 20px #f00; }
         #play-button { padding: 15px 60px; background: transparent; border: 2px solid #ff3e3e; color: #ff3e3e; font-size: 1.2rem; cursor: pointer; letter-spacing: 5px; font-weight: bold; margin-top: 20px;}
 
-        /* Stamina Bar Fixed */
         #stamina-container {
             position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
             width: 250px; height: 15px; border: 2px solid #600; background: rgba(0,0,0,0.9);
@@ -122,16 +121,15 @@
         if (controls.isLocked) {
             const isMoving = (moveF || moveB || moveL || moveR);
             
-            // Stamina & Running logic
             let currentSpeed = 25.0;
             let targetFOV = 75;
 
             if (isRunning && isMoving && stamina > 0) {
                 stamina -= 20 * delta;
-                currentSpeed = 38.0; // SPRINT
-                targetFOV = 92; // Heavy Zoom Out
+                currentSpeed = 38.0; 
+                targetFOV = 92; 
                 headbobTimer += delta * 15;
-                camera.position.y = Math.sin(headbobTimer) * 0.12; // Heavy Shake
+                camera.position.y = Math.sin(headbobTimer) * 0.12; 
                 camera.position.x = Math.cos(headbobTimer * 0.5) * 0.05;
             } else {
                 if (stamina < 100) stamina += 15 * delta;
@@ -173,8 +171,9 @@
             stalker.position.z += dir.z * (25.5 * 0.13) * delta;
             stalker.lookAt(player.position.x, 1.75, player.position.z);
 
-            // Distance Check (Super Close)
-            if(player.position.distanceTo(stalker.position) < 0.8) {
+            // FINAL HITBOX FIX: 0.3 distance (Extreme Close)
+            // Ab dushman ko bilkul player ke andar ghusna parega pakarne ke liye.
+            if(player.position.distanceTo(stalker.position) < 0.3) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
             }
