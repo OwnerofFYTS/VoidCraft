@@ -1,25 +1,55 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VOID AURA - GHOST GIRL</title>
+<title>VOID AURA FIXED</title>
+
 <style>
 body,html{margin:0;padding:0;overflow:hidden;background:#000;font-family:sans-serif;}
-#ui{position:absolute;width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#000;color:#fff;z-index:10;}
-#start{padding:18px 60px;font-size:20px;background:#4CAF50;border:none;border-radius:10px;cursor:pointer;}
-#crosshair{position:absolute;top:50%;left:50%;width:14px;height:14px;transform:translate(-50%,-50%);pointer-events:none;z-index:5;}
-#crosshair::before,#crosshair::after{content:'';position:absolute;background:#fff;}
+
+#ui{
+position:absolute;width:100%;height:100%;
+display:flex;flex-direction:column;justify-content:center;align-items:center;
+background:#000;color:#fff;z-index:10;
+}
+
+#start{
+padding:18px 60px;
+font-size:20px;
+background:#4CAF50;
+border:none;
+border-radius:10px;
+cursor:pointer;
+}
+
+#crosshair{
+position:absolute;top:50%;left:50%;
+width:14px;height:14px;
+transform:translate(-50%,-50%);
+pointer-events:none;
+z-index:5;
+}
+#crosshair::before,#crosshair::after{
+content:'';position:absolute;background:#fff;
+}
 #crosshair::before{width:100%;height:2px;top:50%;}
 #crosshair::after{height:100%;width:2px;left:50%;}
-#stamina{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);width:220px;height:8px;background:#111;border:1px solid #444;}
+
+#stamina{
+position:fixed;bottom:40px;left:50%;
+transform:translateX(-50%);
+width:220px;height:8px;
+background:#111;border:1px solid #444;
+}
 #fill{height:100%;width:100%;background:#4CAF50;}
 </style>
 </head>
+
 <body>
 
 <div id="ui">
 <h1 style="color:#4CAF50;">VOID AURA</h1>
-<p>Ghost Girl is coming for you...</p>
 <button id="start">PLAY</button>
 </div>
 
@@ -28,144 +58,192 @@ body,html{margin:0;padding:0;overflow:hidden;background:#000;font-family:sans-se
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111111);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth, window.innerHeight);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x111111);
+
+const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(20, 40, 20);
+/* LIGHT */
+scene.add(new THREE.AmbientLight(0xffffff,0.8));
+const light=new THREE.DirectionalLight(0xffffff,1);
+light.position.set(20,40,20);
 scene.add(light);
 
-const player = new THREE.Group();
-player.position.set(40, 1.7, 40);
+/* PLAYER */
+const player=new THREE.Group();
+player.position.set(40,1.7,40);
 scene.add(player);
 player.add(camera);
 
-const controls = new THREE.PointerLockControls(camera, document.body);
-document.getElementById('start').onclick = () => controls.lock();
-controls.addEventListener('lock', () => { document.getElementById('ui').style.display='none'; });
+/* CONTROLS */
+const controls=new THREE.PointerLockControls(camera,document.body);
 
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(200,200), new THREE.MeshStandardMaterial({color:0x228B22}));
-ground.rotation.x = -Math.PI/2;
+document.getElementById('start').onclick=()=>controls.lock();
+
+controls.addEventListener('lock',()=>{
+document.getElementById('ui').style.display='none';
+});
+
+/* GROUND */
+const ground=new THREE.Mesh(
+new THREE.PlaneGeometry(200,200),
+new THREE.MeshStandardMaterial({color:0x228B22})
+);
+ground.rotation.x=-Math.PI/2;
 scene.add(ground);
 
 /* BORDER WALLS */
 function wall(x,z,w,d){
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w,4,d), new THREE.MeshStandardMaterial({color:0xff0000}));
-    m.position.set(x,2,z);
-    scene.add(m);
+const m=new THREE.Mesh(
+new THREE.BoxGeometry(w,4,d),
+new THREE.MeshStandardMaterial({color:0xff0000})
+);
+m.position.set(x,2,z);
+scene.add(m);
 }
-wall(50,-2,100,2); wall(50,102,100,2); wall(-2,50,2,100); wall(102,50,2,100);
+wall(50,-2,100,2);
+wall(50,102,100,2);
+wall(-2,50,2,100);
+wall(102,50,2,100);
 
-/* --- LOAD GHOST GIRL --- */
-let ghost = null;
-let mixer = null;
-const clock = new THREE.Clock();
-const loader = new THREE.GLTFLoader();
+/* 🧙 WITCH REPLACEMENT (INSTEAD OF POTATO) */
+const witch = new THREE.Group();
 
-// Yahan aapki file ka naam set kar diya hai
-loader.load('ghost_girl.glb', function(gltf) {
-    ghost = gltf.scene;
-    ghost.scale.set(1.5, 1.5, 1.5); 
-    ghost.position.set(10, 0, 10);
-    scene.add(ghost);
+/* body (cloak) */
+const body = new THREE.Mesh(
+new THREE.ConeGeometry(1.2,2.5,8),
+new THREE.MeshStandardMaterial({color:0x2b2b2b})
+);
+body.position.y = 1.2;
+witch.add(body);
 
-    // Animation handle karne ke liye
-    mixer = new THREE.AnimationMixer(ghost);
-    if(gltf.animations.length > 0) {
-        // Pehla animation play karega (Umeed hai ye Walking hai)
-        mixer.clipAction(gltf.animations[0]).play();
-    }
-}, undefined, function(e) {
-    console.error("File load nahi hui! Kya 'ghost_girl.glb' isi folder mein hai?", e);
-});
+/* head */
+const head = new THREE.Mesh(
+new THREE.SphereGeometry(0.5,16,16),
+new THREE.MeshStandardMaterial({color:0xffccaa})
+);
+head.position.y = 2.6;
+witch.add(head);
 
-let keys = {};
-onkeydown = e => keys[e.code] = true;
-onkeyup = e => keys[e.code] = false;
+/* hat */
+const hatBase = new THREE.Mesh(
+new THREE.ConeGeometry(0.6,1.2,8),
+new THREE.MeshStandardMaterial({color:0x111111})
+);
+hatBase.position.y = 3.4;
+witch.add(hatBase);
 
-let stamina = 100, velocityY = 0, canJump = true, dead = false;
+witch.position.set(10,0,10);
+scene.add(witch);
 
-function animate() {
-    requestAnimationFrame(animate);
-    const delta = clock.getDelta();
+/* INPUT */
+let keys={};
+onkeydown=e=>keys[e.code]=true;
+onkeyup=e=>keys[e.code]=false;
 
-    // Animation ko update karna
-    if(mixer) mixer.update(delta);
+/* STATS */
+let stamina=100;
+let velocityY=0;
+let canJump=true;
+let dead=false;
 
-    if(controls.isLocked && !dead) {
-        let sprint = (keys['ShiftLeft'] && stamina > 0);
-        let speed = sprint ? 0.3 : 0.15;
+function animate(){
+requestAnimationFrame(animate);
 
-        if(sprint && (keys['KeyW']||keys['KeyA']||keys['KeyS']||keys['KeyD'])) stamina -= 0.9;
-        else if(!keys['ShiftLeft']) stamina += 0.12;
-        stamina = Math.max(0, Math.min(100, stamina));
-        document.getElementById('fill').style.width = stamina + "%";
+if(controls.isLocked && !dead){
 
-        let forward = new THREE.Vector3();
-        camera.getWorldDirection(forward);
-        forward.y = 0; forward.normalize();
-        let side = new THREE.Vector3().crossVectors(camera.up, forward).normalize();
-        
-        let moveVec = new THREE.Vector3(0,0,0);
-        if(keys['KeyW']) moveVec.add(forward);
-        if(keys['KeyS']) moveVec.sub(forward);
-        if(keys['KeyA']) moveVec.add(side);
-        if(keys['KeyD']) moveVec.sub(side);
+let sprint=(keys['ShiftLeft']&&stamina>0);
+let speed=sprint?0.3:0.15;
 
-        if(moveVec.length() > 0) moveVec.normalize().multiplyScalar(speed);
-        
-        let nX = player.position.x + moveVec.x;
-        let nZ = player.position.z + moveVec.z;
-        
-        /* BORDER LIMITS (STRICT) */
-        if(nX > 1 && nX < 99) player.position.x = nX;
-        if(nZ > 1 && nZ < 99) player.position.z = nZ;
+/* STAMINA */
+if(sprint && (keys['KeyW']||keys['KeyA']||keys['KeyS']||keys['KeyD'])){
+stamina-=0.9;
+}else{
+if(!keys['ShiftLeft']){
+stamina+=0.12;
+}
+}
+stamina=Math.max(0,Math.min(100,stamina));
+document.getElementById('fill').style.width=stamina+"%";
 
-        if(keys['Space'] && canJump) { velocityY = 0.22; canJump = false; }
-        player.position.y += velocityY;
-        velocityY -= 0.01;
-        if(player.position.y <= 1.7) { player.position.y = 1.7; velocityY = 0; canJump = true; }
+/* MOVE */
+let forward=new THREE.Vector3();
+camera.getWorldDirection(forward);
+forward.y=0;
+forward.normalize();
 
-        /* GHOST GIRL AI */
-        if(ghost) {
-            let pPos = new THREE.Vector3();
-            player.getWorldPosition(pPos);
-            
-            let dir = new THREE.Vector3().subVectors(pPos, ghost.position);
-            dir.y = 0;
-            let dist = ghost.position.distanceTo(pPos);
-            dir.normalize();
+let side=new THREE.Vector3();
+side.crossVectors(camera.up,forward).normalize();
 
-            let aiSpeed = dist > 6 ? 0.23 : 0.16;
-            ghost.position.add(dir.multiplyScalar(aiSpeed));
-            ghost.lookAt(pPos.x, 0, pPos.z); 
+let move=new THREE.Vector3();
 
-            if(dist < 1.8) {
-                dead = true;
-                controls.unlock();
-                alert("GHOST GIRL NE PAKAD LIYA!");
-                location.reload();
-            }
-        }
-    }
-    renderer.render(scene, camera);
+if(keys['KeyW']) move.add(forward);
+if(keys['KeyS']) move.sub(forward);
+if(keys['KeyA']) move.add(side);
+if(keys['KeyD']) move.sub(side);
+
+if(move.length()>0){
+move.normalize().multiplyScalar(speed);
+}
+
+let nextX=player.position.x+move.x;
+let nextZ=player.position.z+move.z;
+
+/* BORDER LOCK */
+if(nextX>1 && nextX<99) player.position.x=nextX;
+if(nextZ>1 && nextZ<99) player.position.z=nextZ;
+
+/* JUMP */
+if(keys['Space'] && canJump){
+velocityY=0.22;
+canJump=false;
+}
+
+player.position.y+=velocityY;
+velocityY-=0.01;
+
+if(player.position.y<=1.7){
+player.position.y=1.7;
+velocityY=0;
+canJump=true;
+}
+
+/* WITCH AI */
+let playerPos=new THREE.Vector3();
+controls.getObject().getWorldPosition(playerPos);
+
+let dir=new THREE.Vector3().subVectors(playerPos,witch.position);
+dir.y=0;
+dir.normalize();
+
+let dist=witch.position.distanceTo(playerPos);
+let aiSpeed=dist>6?0.25:0.18;
+
+witch.position.add(dir.multiplyScalar(aiSpeed));
+
+witch.lookAt(playerPos);
+
+/* COLLISION */
+if(dist<1.4){
+dead=true;
+controls.unlock();
+location.reload();
+}
+
+}
+
+renderer.render(scene,camera);
 }
 animate();
 
-window.onresize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-};
 </script>
+
 </body>
 </html>
+```
