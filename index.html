@@ -1,28 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FPS Game</title>
+<style>
+    body { margin: 0; overflow: hidden; background: black; }
+    #game-wrapper { width: 100vw; height: 100vh; }
+
+    #ui-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: rgba(0,0,0,0.8);
+        color: white;
+    }
+
+    #reticle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 24px;
+        display: none;
+    }
+</style>
+</head>
+
+<body>
+
+<div id="game-wrapper"></div>
+
+<div id="ui-layer">
+    <button id="play-button">Play</button>
+</div>
+
+<div id="reticle">+</div>
+
 <script type="module">
-import * as THREE from 'three';
-import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js';
+import { PointerLockControls } from 'https://cdn.jsdelivr.net/npm/three@0.158/examples/jsm/controls/PointerLockControls.js';
 
 const wrapper = document.getElementById('game-wrapper');
 const uiLayer = document.getElementById('ui-layer');
 const playBtn = document.getElementById('play-button');
 const reticle = document.getElementById('reticle');
 
+// Scene
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x050505);
 scene.fog = new THREE.Fog(0x050505, 1, 60);
 
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+// Camera
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+// Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
 wrapper.appendChild(renderer.domElement);
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambient);
+// Light
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
 scene.add(camera);
 
-const grid = new THREE.GridHelper(200, 60, 0xff4444, 0x222222);
-scene.add(grid);
+// Grid
+scene.add(new THREE.GridHelper(200, 60));
 
 // Gun
 const gun = new THREE.Mesh(
@@ -34,126 +81,124 @@ camera.add(gun);
 
 // Targets
 const targets = [];
-for (let i = 0; i < 15; i++) {
-    const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.5, 3, 1.5),
+for(let i=0;i<15;i++){
+    const t = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5,3,1.5),
         new THREE.MeshStandardMaterial({ color: 0xff0000 })
     );
-    mesh.position.set(Math.random() * 80 - 40, 1.5, Math.random() * 80 - 40);
-    scene.add(mesh);
-    targets.push(mesh);
+    t.position.set(Math.random()*80-40,1.5,Math.random()*80-40);
+    scene.add(t);
+    targets.push(t);
 }
 
+// Controls
 const controls = new PointerLockControls(camera, document.body);
-playBtn.addEventListener('click', () => controls.lock());
 
-controls.addEventListener('lock', () => {
-    uiLayer.style.display = 'none';
-    reticle.style.display = 'block';
+playBtn.onclick = () => controls.lock();
+
+controls.addEventListener('lock', ()=>{
+    uiLayer.style.display='none';
+    reticle.style.display='block';
 });
 
-controls.addEventListener('unlock', () => {
-    uiLayer.style.display = 'flex';
-    reticle.style.display = 'none';
+controls.addEventListener('unlock', ()=>{
+    uiLayer.style.display='flex';
+    reticle.style.display='none';
 });
 
-// Movement Variables
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-let canJump = false;
-let isCrouching = false;
+// Movement
+let moveF=false, moveB=false, moveL=false, moveR=false;
+let canJump=false, isCrouch=false;
 
 const velocity = new THREE.Vector3();
 const direction = new THREE.Vector3();
 
-document.addEventListener('keydown', (e) => {
-    if (e.code === 'KeyW') moveForward = true;
-    if (e.code === 'KeyS') moveBackward = true;
-    if (e.code === 'KeyA') moveLeft = true;
-    if (e.code === 'KeyD') moveRight = true;
+document.addEventListener('keydown', e=>{
+    if(e.code==='KeyW') moveF=true;
+    if(e.code==='KeyS') moveB=true;
+    if(e.code==='KeyA') moveL=true;
+    if(e.code==='KeyD') moveR=true;
 
-    if (e.code === 'Space' && canJump) {
-        velocity.y += 10; // Reduced jump height
-        canJump = false;
+    if(e.code==='Space' && canJump){
+        velocity.y += 10;
+        canJump=false;
     }
 
-    if (e.code === 'ShiftLeft') {
-        isCrouching = true;
-    }
+    if(e.code==='ShiftLeft') isCrouch=true;
 });
 
-document.addEventListener('keyup', (e) => {
-    if (e.code === 'KeyW') moveForward = false;
-    if (e.code === 'KeyS') moveBackward = false;
-    if (e.code === 'KeyA') moveLeft = false;
-    if (e.code === 'KeyD') moveRight = false;
+document.addEventListener('keyup', e=>{
+    if(e.code==='KeyW') moveF=false;
+    if(e.code==='KeyS') moveB=false;
+    if(e.code==='KeyA') moveL=false;
+    if(e.code==='KeyD') moveR=false;
 
-    if (e.code === 'ShiftLeft') {
-        isCrouching = false;
-    }
+    if(e.code==='ShiftLeft') isCrouch=false;
 });
 
 // Shooting
-window.addEventListener('mousedown', () => {
-    if (controls.isLocked) {
-        gun.position.z += 0.1;
-        setTimeout(() => gun.position.z -= 0.1, 50);
+window.addEventListener('mousedown', ()=>{
+    if(!controls.isLocked) return;
 
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    gun.position.z+=0.1;
+    setTimeout(()=>gun.position.z-=0.1,50);
 
-        const hits = raycaster.intersectObjects(targets);
-        if (hits.length > 0) hits[0].object.position.y = -10;
-    }
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(0,0), camera);
+
+    const hit = ray.intersectObjects(targets);
+    if(hit.length>0) hit[0].object.position.y=-10;
 });
 
-let prevTime = performance.now();
+// Animation
+let prev = performance.now();
 
-function animate() {
+function animate(){
     requestAnimationFrame(animate);
 
     const time = performance.now();
+    const delta = (time-prev)/1000;
 
-    if (controls.isLocked) {
-        const delta = (time - prevTime) / 1000;
+    if(controls.isLocked){
+        const speed = isCrouch ? 120 : 180;
 
-        const friction = 10.0;
-        const baseSpeed = isCrouching ? 120.0 : 180.0; // slower movement
+        velocity.x -= velocity.x*10*delta;
+        velocity.z -= velocity.z*10*delta;
+        velocity.y -= 9.8*4*delta;
 
-        velocity.x -= velocity.x * friction * delta;
-        velocity.z -= velocity.z * friction * delta;
-        velocity.y -= 9.8 * 4.0 * delta;
-
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
+        direction.z = Number(moveF)-Number(moveB);
+        direction.x = Number(moveR)-Number(moveL);
         direction.normalize();
 
-        if (moveForward || moveBackward) velocity.z -= direction.z * baseSpeed * delta;
-        if (moveLeft || moveRight) velocity.x -= direction.x * baseSpeed * delta;
+        if(moveF||moveB) velocity.z -= direction.z*speed*delta;
+        if(moveL||moveR) velocity.x -= direction.x*speed*delta;
 
-        controls.moveRight(-velocity.x * delta);
-        controls.moveForward(-velocity.z * delta);
+        controls.moveRight(-velocity.x*delta);
+        controls.moveForward(-velocity.z*delta);
 
-        // Smooth crouch transition
-        let targetHeight = isCrouching ? 1.0 : 1.7;
-        camera.position.y += (targetHeight - camera.position.y) * 10 * delta;
+        let targetH = isCrouch ? 1.0 : 1.7;
+        camera.position.y += (targetH - camera.position.y)*10*delta;
 
-        // Gravity / floor check
-        if (camera.position.y < targetHeight + 0.05) {
-            velocity.y = 0;
-            camera.position.y = targetHeight;
-            canJump = true;
+        if(camera.position.y < targetH+0.05){
+            velocity.y=0;
+            camera.position.y=targetH;
+            canJump=true;
         }
     }
 
-    prevTime = time;
-    renderer.render(scene, camera);
+    prev=time;
+    renderer.render(scene,camera);
 }
 
 animate();
 
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+// Resize
+window.onresize=()=>{
+    camera.aspect = window.innerWidth/window.innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-});
+    renderer.setSize(window.innerWidth,window.innerHeight);
+};
 </script>
+
+</body>
+</html>
