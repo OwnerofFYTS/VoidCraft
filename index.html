@@ -8,7 +8,6 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: 'Courier New', Courier, monospace; }
         #game-wrapper { position: relative; width: 100%; height: 100vh; }
         
-        /* Theme Menu */
         #ui-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle, #1a0000 0%, #000 100%);
@@ -17,35 +16,19 @@
         }
 
         h1 { font-size: 4rem; letter-spacing: 12px; margin: 0; color: #fff; text-shadow: 0 0 20px #f00; }
-        .subtitle { color: #ff3e3e; margin-bottom: 40px; letter-spacing: 5px; font-size: 0.9rem; opacity: 0.6; }
+        #play-button { padding: 15px 60px; background: transparent; border: 2px solid #ff3e3e; color: #ff3e3e; font-size: 1.2rem; cursor: pointer; letter-spacing: 5px; font-weight: bold; margin-top: 20px;}
 
-        #play-button {
-            padding: 15px 60px; background: transparent; border: 2px solid #ff3e3e;
-            color: #ff3e3e; font-size: 1.2rem; cursor: pointer; transition: 0.3s;
-            letter-spacing: 5px; font-weight: bold;
-        }
-        #play-button:hover { background: #ff3e3e; color: white; box-shadow: 0 0 30px #ff3e3e; }
-
-        /* Stamina Bar */
+        /* Stamina Bar Fixed */
         #stamina-container {
-            position: fixed; bottom: 40px; left: 50%;
-            transform: translateX(-50%); width: 250px; height: 12px;
-            border: 2px solid #400; background: rgba(0,0,0,0.8);
+            position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+            width: 250px; height: 15px; border: 2px solid #600; background: rgba(0,0,0,0.9);
             display: none; z-index: 9999;
         }
-        #stamina-bar { width: 100%; height: 100%; background: #ff0000; transition: width 0.1s linear; }
+        #stamina-bar { width: 100%; height: 100%; background: #ff0000; box-shadow: 0 0 10px #f00; }
 
-        #reticle {
-            position: absolute; top: 50%; left: 50%; width: 6px; height: 6px;
-            background: rgba(255, 0, 0, 0.7); border-radius: 50%; transform: translate(-50%, -50%);
-            pointer-events: none; display: none; z-index: 500;
-        }
+        #reticle { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: red; border-radius: 50%; transform: translate(-50%, -50%); display: none; z-index: 500; }
 
-        #game-over {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 0, 0, 0.95); display: none; z-index: 2000;
-            flex-direction: column; justify-content: center; align-items: center;
-        }
+        #game-over { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(40, 0, 0, 0.95); display: none; z-index: 2000; flex-direction: column; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
@@ -53,20 +36,13 @@
 <div id="game-wrapper">
     <div id="ui-layer">
         <h1>VOID AURA</h1>
-        <div class="subtitle">HE IS FASTER THAN YOU</div>
         <button id="play-button">PLAY</button>
     </div>
-
-    <div id="stamina-container">
-        <div id="stamina-bar"></div>
-    </div>
-
+    <div id="stamina-container"><div id="stamina-bar"></div></div>
     <div id="game-over">
-        <h1 style="color: #ff0000;">GAME OVER</h1>
-        <p>THE RED BLOCK CAUGHT YOU</p>
-        <button onclick="location.reload()" style="margin-top:20px; padding:10px 30px; background:none; border:1px solid white; color:white; cursor:pointer;">RESTART</button>
+        <h1 style="color: #f00;">GAME OVER</h1>
+        <button onclick="location.reload()" style="background:none; border:1px solid #fff; color:#fff; padding:10px 20px; cursor:pointer;">RESTART</button>
     </div>
-
     <div id="reticle"></div>
 </div>
 
@@ -89,7 +65,7 @@
     player.add(camera);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.1));
-    const flashlight = new THREE.SpotLight(0xffffff, 2, 35, Math.PI/4, 0.3);
+    const flashlight = new THREE.SpotLight(0xffffff, 2.5, 40, Math.PI/4, 0.3);
     camera.add(flashlight);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
@@ -101,52 +77,32 @@
         new THREE.BoxGeometry(1.5, 3.5, 1.5),
         new THREE.MeshBasicMaterial({ color: 0xff0000 })
     );
-    stalker.position.set(0, 1.75, 30);
+    stalker.position.set(0, 1.75, 35);
     scene.add(stalker);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
     const playBtn = document.getElementById('play-button');
-    const ui = document.getElementById('ui-layer');
-    const staminaUI = document.getElementById('stamina-container');
-    const staminaBar = document.getElementById('stamina-bar');
-
+    
     playBtn.onclick = () => controls.lock();
-    
     controls.addEventListener('lock', () => { 
-        ui.style.display = 'none';
-        staminaUI.style.display = 'block';
+        document.getElementById('ui-layer').style.display = 'none';
+        document.getElementById('stamina-container').style.display = 'block';
         document.getElementById('reticle').style.display = 'block';
-    });
-    
-    controls.addEventListener('unlock', () => { 
-        if(document.getElementById('game-over').style.display !== 'flex') {
-            ui.style.display = 'flex';
-            staminaUI.style.display = 'none';
-        }
     });
 
     let moveF = false, moveB = false, moveL = false, moveR = false, isCrouching = false, canJump = false, isRunning = false;
     let velocity = new THREE.Vector3();
-    
     let stamina = 100;
-    const maxStamina = 100;
-    
-    const NORMAL_SPEED = 25.0;
-    const SPRINT_SPEED = 36.0; // Slightly faster sprint
-    const STALKER_BASE_SPEED = NORMAL_SPEED * 1.01;
-
-    // Headbob/Shake variables
     let headbobTimer = 0;
-    const defaultCameraY = 0; // Relative to player group
 
     document.onkeydown = (e) => {
         if(e.code === 'KeyW') moveF = true;
         if(e.code === 'KeyS') moveB = true;
         if(e.code === 'KeyA') moveL = true;
         if(e.code === 'KeyD') moveR = true;
-        if(e.code === 'Space' && canJump) { velocity.y = 7.5; canJump = false; }
+        if(e.code === 'Space' && canJump) { velocity.y = 8; canJump = false; }
         if(e.code === 'ShiftLeft') isCrouching = true;
-        if(e.code === 'ControlLeft' && stamina > 0) isRunning = true;
+        if(e.code === 'ControlLeft') isRunning = true;
     };
     document.onkeyup = (e) => {
         if(e.code === 'KeyW') moveF = false;
@@ -165,42 +121,30 @@
 
         if (controls.isLocked) {
             const isMoving = (moveF || moveB || moveL || moveR);
-
-            // Stamina Management
-            if (isRunning && isMoving && stamina > 0) {
-                stamina -= 20 * delta; 
-                if (stamina <= 0) { stamina = 0; isRunning = false; }
-            } else {
-                if (stamina < maxStamina) stamina += 15 * delta; // Faster refill
-            }
-            staminaBar.style.width = stamina + "%";
-
-            // Speed & Camera Effects (FOV Change)
-            let currentSpeed = NORMAL_SPEED;
+            
+            // Stamina & Running logic
+            let currentSpeed = 25.0;
             let targetFOV = 75;
 
-            if (isMoving) {
-                if (isRunning && stamina > 0) {
-                    currentSpeed = SPRINT_SPEED;
-                    targetFOV = 85; // Wide FOV when sprinting
-                    
-                    // Camera Shake/Bob effect when sprinting
-                    headbobTimer += delta * 18; // Speed of shake
-                    camera.position.y = defaultCameraY + Math.sin(headbobTimer) * 0.05;
-                    camera.position.x = Math.cos(headbobTimer * 0.5) * 0.02;
-                } else {
-                    // Normal walking bob
-                    headbobTimer += delta * 8;
-                    camera.position.y = defaultCameraY + Math.sin(headbobTimer) * 0.02;
-                    camera.position.x = 0;
-                }
+            if (isRunning && isMoving && stamina > 0) {
+                stamina -= 20 * delta;
+                currentSpeed = 38.0; // SPRINT
+                targetFOV = 92; // Heavy Zoom Out
+                headbobTimer += delta * 15;
+                camera.position.y = Math.sin(headbobTimer) * 0.12; // Heavy Shake
+                camera.position.x = Math.cos(headbobTimer * 0.5) * 0.05;
             } else {
-                // Reset camera position smoothly when standing still
-                camera.position.y += (defaultCameraY - camera.position.y) * 0.1;
-                camera.position.x += (0 - camera.position.x) * 0.1;
+                if (stamina < 100) stamina += 15 * delta;
+                isRunning = false;
+                if (isMoving) {
+                    headbobTimer += delta * 8;
+                    camera.position.y = Math.sin(headbobTimer) * 0.03;
+                } else {
+                    camera.position.y *= 0.9;
+                }
+                camera.position.x *= 0.9;
             }
-
-            // Smooth FOV transition
+            document.getElementById('stamina-bar').style.width = stamina + "%";
             camera.fov += (targetFOV - camera.fov) * 0.1;
             camera.updateProjectionMatrix();
 
@@ -208,7 +152,7 @@
 
             velocity.x -= velocity.x * 10 * delta;
             velocity.z -= velocity.z * 10 * delta;
-            velocity.y -= 20 * delta; 
+            velocity.y -= 22 * delta;
 
             if (moveF) velocity.z -= currentSpeed * delta;
             if (moveB) velocity.z += currentSpeed * delta;
@@ -219,21 +163,18 @@
             controls.moveForward(-velocity.z * delta);
 
             let tH = isCrouching ? 0.8 : 1.7;
-            player.position.y += (tH - player.position.y) * 0.1;
-            player.position.y += velocity.y * delta;
-
+            player.position.y += (tH - player.position.y) * 0.1 + velocity.y * delta;
             if (player.position.y < tH) { velocity.y = 0; player.position.y = tH; canJump = true; }
 
-            // Stalker logic
-            const stalkerDir = new THREE.Vector3().subVectors(player.position, stalker.position);
-            stalkerDir.y = 0; stalkerDir.normalize();
-            stalker.position.x += stalkerDir.x * (STALKER_BASE_SPEED * 0.13) * delta; 
-            stalker.position.z += stalkerDir.z * (STALKER_BASE_SPEED * 0.13) * delta;
+            // Stalker AI
+            const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
+            dir.y = 0; dir.normalize();
+            stalker.position.x += dir.x * (25.5 * 0.13) * delta; 
+            stalker.position.z += dir.z * (25.5 * 0.13) * delta;
             stalker.lookAt(player.position.x, 1.75, player.position.z);
 
-            // Hitbox Fix: Distance kam kar di (1.2 instead of 1.8)
-            // Ab bilkul kareeb aane par hi GAME OVER hoga.
-            if(player.position.distanceTo(stalker.position) < 1.2) {
+            // Distance Check (Super Close)
+            if(player.position.distanceTo(stalker.position) < 0.8) {
                 document.getElementById('game-over').style.display = 'flex';
                 controls.unlock();
             }
