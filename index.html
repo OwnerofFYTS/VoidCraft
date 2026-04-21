@@ -3,43 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA | FIXED POTATO</title>
+    <title>VOID AURA | POWER FLASH-POTATO</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; color: #fff; font-family: sans-serif; }
         #game-container { position: relative; width: 100%; height: 100vh; }
         
-        /* UI Layers - High Z-Index to stay on top */
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #201000 0%, #000 100%);
+            background: radial-gradient(circle, #1a0d00 0%, #000 100%);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 10000;
         }
 
         #hotbar {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; z-index: 9999; pointer-events: none;
+            display: flex; gap: 15px; z-index: 9999;
         }
         .slot {
-            width: 70px; height: 70px; background: rgba(30, 20, 10, 0.8);
-            border: 3px solid #444; display: flex; justify-content: center;
+            width: 75px; height: 75px; background: rgba(20, 15, 5, 0.9);
+            border: 3px solid #333; display: flex; justify-content: center;
             align-items: center; font-weight: bold; position: relative;
         }
-        .slot.active { border-color: #ffaa00; box-shadow: 0 0 15px #ffaa00; background: rgba(60, 40, 10, 0.9); }
-        .slot-num { position: absolute; top: 5px; left: 8px; font-size: 12px; color: #aaa; }
-        .item-icon { font-size: 2rem; }
+        .slot.active { border-color: #ffaa00; box-shadow: 0 0 20px rgba(255, 170, 0, 0.5); background: rgba(50, 35, 10, 0.9); }
+        .slot-num { position: absolute; top: 5px; left: 8px; font-size: 12px; color: #888; }
+        .item-icon { font-size: 2.2rem; }
 
         #stamina-box {
-            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-            width: 200px; height: 8px; background: #222; border: 1px solid #ffaa00; z-index: 9999;
+            position: fixed; bottom: 125px; left: 50%; transform: translateX(-50%);
+            width: 220px; height: 10px; background: #111; border: 1px solid #640; z-index: 9999;
         }
-        #stamina-fill { width: 100%; height: 100%; background: #ffaa00; }
+        #stamina-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #840, #ffaa00); }
 
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 5px; height: 5px; background: #ffaa00; border-radius: 50%; z-index: 5000; transform: translate(-50%, -50%); }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: rgba(255, 170, 0, 0.6); border-radius: 50%; z-index: 5000; transform: translate(-50%, -50%); }
         
         #game-over-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(40, 20, 0, 0.9); display: none; z-index: 20000;
+            background: rgba(20, 10, 0, 0.95); display: none; z-index: 20000;
             flex-direction: column; justify-content: center; align-items: center;
         }
     </style>
@@ -48,8 +47,9 @@
 
 <div id="game-container">
     <div id="ui-overlay">
-        <h1 style="font-size: 50px; color: #ffaa00; letter-spacing: 10px;">VOID AURA</h1>
-        <button id="start-btn" style="padding: 15px 50px; font-size: 20px; background: none; border: 2px solid #ffaa00; color: #ffaa00; cursor: pointer;">PLAY</button>
+        <h1 style="font-size: 60px; color: #ffaa00; letter-spacing: 15px; margin: 0;">VOID AURA</h1>
+        <p style="color: #666; margin-bottom: 30px;">PRESS 1 FOR FLASHLIGHT</p>
+        <button id="start-btn" style="padding: 18px 60px; font-size: 22px; background: none; border: 2px solid #ffaa00; color: #ffaa00; cursor: pointer; font-weight: bold;">START PROTOCOL</button>
     </div>
 
     <div id="hotbar">
@@ -63,8 +63,9 @@
     <div id="crosshair"></div>
     
     <div id="game-over-screen">
-        <h1 style="color: #ffaa00; font-size: 60px;">MASHED!</h1>
-        <button onclick="location.reload()" style="padding: 10px 30px; color: #fff; background: none; border: 1px solid #fff; cursor: pointer;">RETRY</button>
+        <h1 style="color: #ffaa00; font-size: 70px; margin: 0;">MASHED</h1>
+        <p style="color: #fff; letter-spacing: 5px;">THE POTATO FOUND YOU</p>
+        <button onclick="location.reload()" style="margin-top: 30px; padding: 12px 40px; color: #fff; background: none; border: 1px solid #fff; cursor: pointer;">REBOOT</button>
     </div>
 </div>
 
@@ -73,12 +74,13 @@
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050300);
-    scene.fog = new THREE.Fog(0x050300, 1, 40);
+    scene.background = new THREE.Color(0x020100);
+    scene.fog = new THREE.Fog(0x020100, 1, 50);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true; // For better light effects
     document.getElementById('game-container').appendChild(renderer.domElement);
 
     const player = new THREE.Group();
@@ -86,26 +88,27 @@
     scene.add(player);
     player.add(camera);
 
-    // Flashlight (Long range effect)
-    const torch = new THREE.SpotLight(0xffeebb, 0, 45, Math.PI/5, 0.4);
+    // --- ENHANCED FLASHLIGHT ---
+    const torch = new THREE.SpotLight(0xfff0dd, 0, 60, Math.PI/6, 0.5, 1);
+    torch.position.set(0.2, -0.2, -0.1); // Slightly off center like holding it
     camera.add(torch);
-    torch.target.position.set(0, 0, -1);
+    torch.target.position.set(0, 0, -5); // Light points where you look
     camera.add(torch.target);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.03));
-    scene.add(new THREE.GridHelper(400, 80, 0x332200, 0x111111));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.02));
+    const grid = new THREE.GridHelper(500, 100, 0x221100, 0x050505);
+    scene.add(grid);
 
-    // --- REAL POTATO (NO EXTERNAL TEXTURE NEEDED) ---
-    const potatoGeo = new THREE.SphereGeometry(1, 32, 32);
-    potatoGeo.scale(1.2, 1.6, 1.1); // Potato Shape
+    // --- POTATO STALKER (THORA BADA SIZE) ---
+    const potatoGeo = new THREE.SphereGeometry(1.4, 32, 32); 
+    potatoGeo.scale(1.3, 1.7, 1.2); // Final fixed larger size
     const potatoMat = new THREE.MeshStandardMaterial({ 
-        color: 0x6e4b2e, // Deep Potato Brown
+        color: 0x5c3d24, 
         roughness: 1.0,
-        metalness: 0.0,
-        flatShading: false
+        metalness: 0.0
     });
     const stalker = new THREE.Mesh(potatoGeo, potatoMat);
-    stalker.position.set(0, 1.6, 25);
+    stalker.position.set(0, 1.8, 30);
     scene.add(stalker);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
@@ -126,7 +129,7 @@
 
     window.onkeydown = (e) => {
         keys[e.code] = true;
-        if(e.key >= '1' && e.key <= '4') selectSlot(parseInt(e.key));
+        if(e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4') selectSlot(parseInt(e.key));
     };
     window.onkeyup = (e) => keys[e.code] = false;
 
@@ -134,11 +137,11 @@
         document.querySelectorAll('.slot').forEach(s => s.classList.remove('active'));
         if (activeSlot === n) {
             activeSlot = null;
-            if(n === 1) torch.intensity = 0;
+            torch.intensity = 0;
         } else {
             activeSlot = n;
             document.getElementById(`slot-${n}`).classList.add('active');
-            if(n === 1) torch.intensity = 5.0; // High Power Torch
+            if(n === 1) torch.intensity = 8.0; // Very strong directional light
             else torch.intensity = 0;
         }
     }
@@ -150,12 +153,15 @@
         const delta = (time - lastT) / 1000;
 
         if (controls.isLocked) {
-            // Movement Logic
-            let isRunning = keys['ControlLeft'] && stamina > 0;
-            let speed = isRunning ? 35 : 22;
+            // Movement logic
+            let isRunning = keys['ShiftLeft'] && stamina > 0;
+            let speed = isRunning ? 32 : 20;
             
-            if (isRunning && (keys['KeyW'] || keys['KeyS'])) stamina = Math.max(0, stamina - 30 * delta);
-            else stamina = Math.min(100, stamina + 15 * delta);
+            if (isRunning && (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'])) {
+                stamina = Math.max(0, stamina - 25 * delta);
+            } else {
+                stamina = Math.min(100, stamina + 15 * delta);
+            }
             document.getElementById('stamina-fill').style.width = stamina + "%";
 
             if (keys['KeyW']) controls.moveForward(speed * delta);
@@ -163,15 +169,15 @@
             if (keys['KeyA']) controls.moveRight(-speed * delta);
             if (keys['KeyD']) controls.moveRight(speed * delta);
 
-            // Potato AI (Fixed Scale)
+            // Potato AI
             const dir = new THREE.Vector3().subVectors(player.position, stalker.position);
             dir.y = 0; dir.normalize();
-            stalker.position.x += dir.x * 5 * delta; 
-            stalker.position.z += dir.z * 5 * delta;
-            stalker.lookAt(player.position.x, 1.6, player.position.z);
+            stalker.position.x += dir.x * 5.2 * delta; 
+            stalker.position.z += dir.z * 5.2 * delta;
+            stalker.lookAt(player.position.x, 1.8, player.position.z);
 
-            // Collision (Screen Touch)
-            if (player.position.distanceTo(stalker.position) < 2.3) {
+            // Kill Zone
+            if (player.position.distanceTo(stalker.position) < 2.5) {
                 document.getElementById('game-over-screen').style.display = 'flex';
                 controls.unlock();
             }
