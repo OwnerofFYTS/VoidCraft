@@ -2,47 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOID AURA - FIXED LOOK</title>
+    <title>VOID AURA - READY TO PLAY</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; }
-        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: #f00; z-index: 30; font-family: 'Courier New', monospace; }
-        #start { padding: 20px 50px; font-size: 24px; background: #900; color: #fff; border: 2px solid #fff; cursor: pointer; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; border-radius: 50%; pointer-events: none; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: #fff; z-index: 100; text-align: center; }
+        #start { padding: 20px 60px; font-size: 24px; background: #f00; color: #fff; border: none; cursor: pointer; font-weight: bold; box-shadow: 0 0 20px #f00; }
+        #stamina { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 200px; height: 10px; background: #333; border: 1px solid #555; }
+        #fill { height: 100%; width: 100%; background: #ff0000; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h1>VOID AURA</h1>
+    <h1 style="color:red; font-size: 50px; letter-spacing: 10px;">VOID AURA</h1>
     <button id="start">START MISSION</button>
+    <p style="color: #666; margin-top: 20px;">WASD: Move | SHIFT: Run | SPACE: Jump | C: Crouch</p>
 </div>
-<div id="crosshair"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+<div id="stamina"><div id="fill"></div></div>
+
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050505);
-    scene.fog = new THREE.FogExp2(0x050505, 0.05);
+    scene.background = new THREE.Color(0x020202);
+    scene.fog = new THREE.FogExp2(0x020202, 0.05);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding;
     document.body.appendChild(renderer.domElement);
 
-    // Full Bright Light taaki Ghost dikhe
-    const light = new THREE.AmbientLight(0xffffff, 2); 
-    scene.add(light);
+    const ambient = new THREE.AmbientLight(0xffffff, 1.8); 
+    scene.add(ambient);
 
-    // Mouse Controls (Fixed for 360 Rotation)
     const controls = new THREE.PointerLockControls(camera, document.body);
-    document.getElementById('start').onclick = () => {
-        controls.lock();
-    };
+    document.getElementById('start').onclick = () => controls.lock();
 
     controls.addEventListener('lock', () => document.getElementById('ui').style.display = 'none');
     controls.addEventListener('unlock', () => document.getElementById('ui').style.display = 'flex');
@@ -51,28 +48,27 @@
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
-    /* --- GHOST GIRL SPAWN (DIRECTLY IN FRONT) --- */
+    /* --- GHOST GIRL LOAD --- */
     let ghost = null, mixer = null;
     const clock = new THREE.Clock();
     const loader = new THREE.GLTFLoader();
 
+    // Exactly matching your file name from screenshot
     loader.load('./ghost_girl.glb', (gltf) => {
         ghost = gltf.scene;
         ghost.scale.set(1.5, 1.5, 1.5);
-        
-        // Isse Ghost bilkul aapke samne spawn hogi (Z axis par)
-        ghost.position.set(0, 0, -10); 
+        ghost.position.set(0, 0, -10); // Spawns in front of you
         scene.add(ghost);
-
         mixer = new THREE.AnimationMixer(ghost);
         if (gltf.animations.length > 0) mixer.clipAction(gltf.animations[0]).play();
     });
 
-    const keys = {};
-    document.onkeydown = (e) => keys[e.code] = true;
-    document.onkeyup = (e) => keys[e.code] = false;
+    let keys = {};
+    document.addEventListener('keydown', (e) => keys[e.code] = true);
+    document.addEventListener('keyup', (e) => keys[e.code] = false);
 
-    camera.position.y = 1.7; // Human Height
+    let velocityY = 0, isJumping = false, stamina = 100;
+    camera.position.y = 1.7;
 
     function animate() {
         requestAnimationFrame(animate);
@@ -80,42 +76,42 @@
         if (mixer) mixer.update(delta);
 
         if (controls.isLocked) {
-            // Player speed (Slowed for control)
-            let speed = keys['ShiftLeft'] ? 0.2 : 0.1;
+            let sprinting = keys['ShiftLeft'] && stamina > 0;
+            let crouching = keys['KeyC'];
+            let speed = sprinting ? 0.35 : (crouching ? 0.08 : 0.18);
+
+            if (sprinting) stamina -= 0.6; else stamina += 0.2;
+            stamina = Math.max(0, Math.min(100, stamina));
+            document.getElementById('fill').style.width = stamina + "%";
 
             if (keys['KeyW']) controls.moveForward(speed);
             if (keys['KeyS']) controls.moveForward(-speed);
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
 
-            if (ghost) {
-                // Ghost movement logic
-                let ghostDir = new THREE.Vector3().subVectors(camera.position, ghost.position);
-                ghostDir.y = 0;
-                ghostDir.normalize();
-                
-                // Ghost speed (Very slow so you can see her)
-                ghost.position.add(ghostDir.multiplyScalar(0.04)); 
-                ghost.lookAt(camera.position.x, 0, camera.position.z);
+            if (keys['Space'] && !isJumping) { velocityY = 0.25; isJumping = true; }
 
-                // Collision
-                if (ghost.position.distanceTo(camera.position) < 1.5) {
-                    controls.unlock();
-                    alert("GHOST GOT YOU!");
-                    location.reload();
-                }
+            let targetH = crouching ? 0.9 : 1.7;
+            camera.position.y += (targetH - camera.position.y) * 0.1;
+
+            camera.position.y += velocityY;
+            velocityY -= 0.012;
+            if (camera.position.y < targetH) {
+                camera.position.y = targetH;
+                velocityY = 0;
+                isJumping = false;
+            }
+
+            if (ghost) {
+                let dir = new THREE.Vector3().subVectors(camera.position, ghost.position);
+                dir.y = 0; dir.normalize();
+                ghost.position.add(dir.multiplyScalar(0.06));
+                ghost.lookAt(camera.position.x, 0, camera.position.z);
             }
         }
         renderer.render(scene, camera);
     }
     animate();
-
-    // Window Resize Fix
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
 </script>
 </body>
 </html>
