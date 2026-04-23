@@ -2,75 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VOID AURA - THE HORROR BEGINS</title>
+    <title>MOVEMENT DEBUG TEST</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; }
-        #overlay { position: absolute; width: 100%; height: 100%; background: #000; color: #f00; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; font-family: 'Courier New', monospace; }
-        #start-btn { padding: 15px 40px; background: #300; color: #f00; border: 2px solid #f00; cursor: pointer; font-size: 20px; font-weight: bold; }
-        #start-btn:hover { background: #f00; color: #000; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #444; font-family: sans-serif; }
+        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.9); color: #fff; z-index: 100; text-align: center; }
+        #start { padding: 20px 60px; font-size: 24px; background: white; color: black; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="overlay">
-    <h1 style="font-size: 50px; letter-spacing: 15px;">VOID AURA</h1>
-    <button id="start-btn">START MISSION</button>
-    <p style="color: #444; margin-top: 10px;">WASD to Move | Mouse to Look</p>
+<div id="ui">
+    <h1>MOVEMENT CHECK</h1>
+    <p>Agar Blue background dikhayi de, toh mouse hila kar dekhein.</p>
+    <button id="start">CLICK TO START</button>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 
 <script>
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000000, 0.15); // Horror dhund
+    scene.background = new THREE.Color(0x87CEEB); // Sky Blue (Aasman)
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Controls
+    const light = new THREE.AmbientLight(0xffffff, 1);
+    scene.add(light);
+
     const controls = new THREE.PointerLockControls(camera, document.body);
-    document.getElementById('start-btn').onclick = () => controls.lock();
-    controls.addEventListener('lock', () => document.getElementById('overlay').style.display = 'none');
-    controls.addEventListener('unlock', () => document.getElementById('overlay').style.display = 'flex');
+    document.getElementById('start').onclick = () => controls.lock();
+    controls.addEventListener('lock', () => document.getElementById('ui').style.display = 'none');
 
-    // Light (Flashlight)
-    const flashlight = new THREE.SpotLight(0xffffff, 2, 20, Math.PI / 6, 0.5);
-    camera.add(flashlight);
-    flashlight.position.set(0, 0, 1);
-    flashlight.target = new THREE.Object3D();
-    camera.add(flashlight.target);
-    flashlight.target.position.set(0, 0, -5);
-    scene.add(camera);
+    // Zameen par Checkered Pattern (Shatranj jaisa)
+    const size = 1000;
+    const divisions = 100;
+    const gridHelper = new THREE.GridHelper(size, divisions, 0xff0000, 0x000000);
+    scene.add(gridHelper);
 
-    // Environment: Ek Lambi Corridor (Deewarein)
-    const wallMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
+    // --- BIG RED BLOCK (TARGET) ---
+    const boxGeo = new THREE.BoxGeometry(5, 5, 5);
+    const boxMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const targetBox = new THREE.Mesh(boxGeo, boxMat);
+    targetBox.position.set(0, 2.5, -20); // 20 units door
+    scene.add(targetBox);
 
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 100), floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    scene.add(floor);
-
-    // Pillars ya Deewar ke tukde taaki movement nazar aaye
-    for(let i=0; i<10; i++) {
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 4, 1), wallMat);
-        wall.position.set(i % 2 === 0 ? -4 : 4, 2, -i * 10);
-        scene.add(wall);
-    }
-
-    // Movement Logic
     const keys = {};
     window.onkeydown = (e) => keys[e.code] = true;
     window.onkeyup = (e) => keys[e.code] = false;
 
-    camera.position.y = 1.6;
+    camera.position.y = 2; // Thoda upar taaki zameen dikhe
 
     function animate() {
         requestAnimationFrame(animate);
         if (controls.isLocked) {
-            let speed = 0.1;
+            let speed = 0.2;
             if (keys['KeyW']) controls.moveForward(speed);
             if (keys['KeyS']) controls.moveForward(-speed);
             if (keys['KeyA']) controls.moveRight(-speed);
