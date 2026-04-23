@@ -2,23 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VOID AURA - CLEAR VERSION</title>
+    <title>VOID AURA - RED BLOCK TEST</title>
     <style>
         body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
-        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); color: #fff; z-index: 1000; text-align: center; }
-        #start-btn { padding: 15px 50px; font-size: 22px; background: #900; color: #fff; border: 2px solid #fff; cursor: pointer; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: red; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: #fff; z-index: 1000; }
+        #start-btn { padding: 15px 40px; font-size: 20px; background: #900; color: #fff; border: 2px solid #fff; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h1 style="color: #f00;">VOID AURA</h1>
+    <h1 style="color:red">VOID AURA</h1>
     <button id="start-btn">START GAME</button>
-    <p>WASD: Move | SPACE: Jump | SHIFT: Run</p>
+    <p>Samne Red Block ko dekhein movement check karne ke liye</p>
 </div>
-
-<div id="crosshair"></div>
 
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
@@ -33,26 +30,24 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    // Tez roshni taaki blurry na lage
-    const ambient = new THREE.AmbientLight(0xffffff, 1.5);
-    scene.add(ambient);
+    const light = new THREE.AmbientLight(0xffffff, 1.5);
+    scene.add(light);
 
     const controls = new THREE.PointerLockControls(camera, document.body);
     document.getElementById('start-btn').onclick = () => controls.lock();
     controls.addEventListener('lock', () => document.getElementById('ui').style.display = 'none');
     controls.addEventListener('unlock', () => document.getElementById('ui').style.display = 'flex');
 
-    // --- GRID FLOOR (Movement check karne ke liye) ---
-    const grid = new THREE.GridHelper(200, 50, 0xff0000, 0x444444);
+    // Zameen (Grid ke saath)
+    const grid = new THREE.GridHelper(200, 40, 0x333333, 0x222222);
     scene.add(grid);
 
-    // Asli Zameen
-    const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(200, 200), 
-        new THREE.MeshStandardMaterial({ color: 0x111111 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    scene.add(ground);
+    // --- SAMNE WALA RED BLOCK ---
+    const geometry = new THREE.BoxGeometry(4, 4, 4);
+    const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+    const redBlock = new THREE.Mesh(geometry, material);
+    redBlock.position.set(0, 2, -15); // Bilkul samne 15 units door
+    scene.add(redBlock);
 
     /* --- GHOST --- */
     let ghost = null, mixer = null;
@@ -62,7 +57,7 @@
     loader.load('./ghost_girl.glb', (gltf) => {
         ghost = gltf.scene;
         ghost.scale.set(1.5, 1.5, 1.5);
-        ghost.position.set(0, 0, -10);
+        ghost.position.set(0, 0, -10); // Ghost block se thoda pehle hogi
         scene.add(ghost);
         mixer = new THREE.AnimationMixer(ghost);
         if (gltf.animations.length > 0) mixer.clipAction(gltf.animations[0]).play();
@@ -72,7 +67,6 @@
     window.onkeydown = (e) => keys[e.code] = true;
     window.onkeyup = (e) => keys[e.code] = false;
 
-    let vY = 0, jumping = false;
     camera.position.y = 1.7;
 
     function animate() {
@@ -82,17 +76,10 @@
 
         if (controls.isLocked) {
             let speed = keys['ShiftLeft'] ? 0.3 : 0.15;
-
             if (keys['KeyW']) controls.moveForward(speed);
             if (keys['KeyS']) controls.moveForward(-speed);
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
-
-            if (keys['Space'] && !jumping) { vY = 0.2; jumping = true; }
-            
-            camera.position.y += vY;
-            vY -= 0.01;
-            if (camera.position.y < 1.7) { camera.position.y = 1.7; vY = 0; jumping = false; }
 
             if (ghost) {
                 let dir = new THREE.Vector3().subVectors(camera.position, ghost.position);
