@@ -2,21 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Horror - SkyViper</title>
+    <title>3D Horror Game - SkyViper</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
-        #ui { position: absolute; top: 20px; left: 20px; color: white; z-index: 100; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; }
+        #ui { position: absolute; top: 20px; left: 20px; color: white; z-index: 100; pointer-events: none; }
         #stamina-box { width: 200px; height: 10px; border: 1px solid #444; background: #222; }
         #stamina-bar { width: 100%; height: 100%; background: #0f0; }
-        #msg { font-size: 12px; margin-top: 5px; }
+        #instructions { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #555; }
     </style>
 </head>
 <body>
+
     <div id="ui">
         <div id="stamina-box"><div id="stamina-bar"></div></div>
-        <div id="msg">WASD: Move | Shift: Sprint | C: Crouch | Space: Jump</div>
+        <div id="msg">STAMINA</div>
     </div>
+    <div id="instructions">CLICK TO LOCK MOUSE | WASD: Move | Shift: Sprint | C: Crouch | Space: Jump</div>
 
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -25,96 +26,128 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // Scene Setup
+        // 1. SCENE & CAMERA SETUP
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x000000);
-        scene.fog = new THREE.Fog(0x000000, 1, 15);
+        scene.fog = new THREE.Fog(0x000000, 1, 15); // Horror Fog effect
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.rendererElement || renderer.domElement);
+        document.body.appendChild(renderer.domElement);
 
-        // Lights
-        const light = new THREE.PointLight(0xff0000, 10, 10); // Red horror light
-        scene.add(light);
-        const ambient = new THREE.AmbientLight(0x111111);
-        scene.add(ambient);
+        // 2. LIGHTING (Flashlight effect)
+        const flashLight = new THREE.SpotLight(0xffffff, 50);
+        flashLight.angle = Math.PI / 6;
+        flashLight.penumbra = 0.3;
+        flashLight.decay = 2;
+        flashLight.distance = 20;
+        scene.add(flashLight);
+        scene.add(flashLight.target);
 
-        // Black Ground
-        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        // 3. BLACK GROUND (Zameen)
+        const grid = new THREE.GridHelper(100, 50, 0x222222, 0x111111);
+        scene.add(grid); 
+        const floorGeo = new THREE.PlaneGeometry(200, 200);
         const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
-        // 3D Player (Representing the Churail/Character)
+        // 4. 3D PLAYER (Capsule representing Churail/Character)
         const playerGeo = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
-        const playerMat = new THREE.MeshStandardMaterial({ color: 0x330000 });
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x220000 });
         const player = new THREE.Mesh(playerGeo, playerMat);
         player.position.y = 1;
         scene.add(player);
 
-        // Movement Variables
+        // 5. MOVEMENT LOGIC
         let stamina = 100;
         let isJumping = false;
         let yVelocity = 0;
-        const keys = {};
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+        let isCrouching = false, isSprinting = false;
 
-        window.addEventListener('keydown', (e) => keys[e.code] = true);
-        window.addEventListener('keyup', (e) => keys[e.code] = false);
+        document.addEventListener('keydown', (e) => {
+            if(e.code === 'KeyW') moveForward = true;
+            if(e.code === 'KeyS') moveBackward = true;
+            if(e.code === 'KeyA') moveLeft = true;
+            if(e.code === 'KeyD') moveRight = true;
+            if(e.code === 'ShiftLeft') isSprinting = true;
+            if(e.code === 'KeyC') isCrouching = true;
+            if(e.code === 'Space' && !isJumping) { isJumping = true; yVelocity = 0.15; }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if(e.code === 'KeyW') moveForward = false;
+            if(e.code === 'KeyS') moveBackward = false;
+            if(e.code === 'KeyA') moveLeft = false;
+            if(e.code === 'KeyD') moveRight = false;
+            if(e.code === 'ShiftLeft') isSprinting = false;
+            if(e.code === 'KeyC') isCrouching = false;
+        });
+
+        // Mouse Lock for 3D Look
+        document.body.addEventListener('click', () => {
+            document.body.requestPointerLock();
+        });
+
+        let yaw = 0, pitch = 0;
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === document.body) {
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, pitch));
+            }
+        });
 
         function animate() {
             requestAnimationFrame(animate);
 
-            let speed = 0.1;
+            // Movement Calculation
+            let speed = isCrouching ? 0.05 : (isSprinting && stamina > 0 ? 0.15 : 0.08);
+            
+            // Stamina Management
             const bar = document.getElementById('stamina-bar');
-
-            // Crouch
-            if (keys['KeyC']) {
-                speed = 0.04;
-                player.scale.y = 0.5;
-            } else {
-                player.scale.y = 1;
-            }
-
-            // Sprint
-            if (keys['ShiftLeft'] && stamina > 0 && !keys['KeyC']) {
-                speed = 0.2;
-                stamina -= 0.5;
+            if (isSprinting && (moveForward || moveBackward) && stamina > 0) {
+                stamina -= 0.6;
             } else if (stamina < 100) {
-                stamina += 0.2;
+                stamina += 0.3;
+            }
+            bar.style.width = stamina + "%";
+            bar.style.backgroundColor = stamina < 25 ? "red" : "#0f0";
+
+            if (moveForward) {
+                player.position.x += Math.sin(yaw) * speed;
+                player.position.z += Math.cos(yaw) * speed;
+            }
+            if (moveBackward) {
+                player.position.x -= Math.sin(yaw) * speed;
+                player.position.z -= Math.cos(yaw) * speed;
             }
 
-            // Movement
-            if (keys['KeyW']) player.position.z -= speed;
-            if (keys['KeyS']) player.position.z += speed;
-            if (keys['KeyA']) player.position.x -= speed;
-            if (keys['KeyD']) player.position.x += speed;
-
-            // Jump
-            if (keys['Space'] && !isJumping) {
-                isJumping = true;
-                yVelocity = 0.15;
-            }
-
+            // Jump Gravity
             if (isJumping) {
                 player.position.y += yVelocity;
-                yVelocity -= 0.008; // Gravity
+                yVelocity -= 0.008;
                 if (player.position.y <= 1) {
                     player.position.y = 1;
                     isJumping = false;
                 }
             }
 
-            // Camera follow
-            camera.position.set(player.position.x, player.position.y + 2, player.position.z + 5);
-            camera.lookAt(player.position);
-            light.position.set(player.position.x, player.position.y + 2, player.position.z);
+            // Crouch height
+            player.scale.y = isCrouching ? 0.6 : 1;
 
-            // UI
-            bar.style.width = stamina + "%";
-            bar.style.backgroundColor = stamina < 25 ? "red" : "#0f0";
+            // Camera follow & rotation
+            camera.rotation.order = "YXZ";
+            camera.rotation.set(pitch, yaw, 0);
+            camera.position.set(player.position.x, player.position.y + 0.8, player.position.z);
+
+            // Flashlight follow camera
+            flashLight.position.copy(camera.position);
+            const targetPos = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
+            flashLight.target.position.copy(targetPos);
 
             renderer.render(scene, camera);
         }
