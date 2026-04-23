@@ -3,163 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horror Game - SkyViper</title>
+    <title>3D Horror - SkyViper</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #000;
-            color: white;
-            font-family: 'Courier New', Courier, monospace;
-            user-select: none;
-        }
-
-        #game-ui {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-        }
-
-        #stamina-container {
-            width: 200px;
-            height: 12px;
-            border: 2px solid #444;
-            background: #222;
-            margin-bottom: 8px;
-        }
-
-        #stamina-bar {
-            width: 100%;
-            height: 100%;
-            background: #0f0;
-            transition: width 0.1s linear;
-        }
-
-        canvas {
-            display: block;
-            background: #000;
-        }
-
-        #instructions {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+        #ui { position: absolute; top: 20px; left: 20px; color: white; z-index: 100; }
+        #stamina-box { width: 200px; height: 10px; border: 1px solid #444; background: #222; }
+        #stamina-bar { width: 100%; height: 100%; background: #0f0; }
+        #msg { font-size: 12px; margin-top: 5px; }
     </style>
 </head>
 <body>
-
-    <div id="game-ui">
-        <div id="stamina-container">
-            <div id="stamina-bar"></div>
-        </div>
-        <div id="label">STAMINA</div>
+    <div id="ui">
+        <div id="stamina-box"><div id="stamina-bar"></div></div>
+        <div id="msg">WASD: Move | Shift: Sprint | C: Crouch | Space: Jump</div>
     </div>
 
-    <div id="instructions">W,A,S,D to Move | Shift to Sprint | C to Crouch | Space to Jump</div>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
 
-    <canvas id="gameCanvas"></canvas>
+    <script type="module">
+        import * as THREE from 'three';
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const staminaBar = document.getElementById('stamina-bar');
+        // Scene Setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.Fog(0x000000, 1, 15);
 
-        // Resize function
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.rendererElement || renderer.domElement);
 
-        let player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            size: 50,
-            baseSpeed: 3,
-            stamina: 100,
-            yVelocity: 0,
-            isJumping: false,
-            groundY: canvas.height / 2
-        };
+        // Lights
+        const light = new THREE.PointLight(0xff0000, 10, 10); // Red horror light
+        scene.add(light);
+        const ambient = new THREE.AmbientLight(0x111111);
+        scene.add(ambient);
 
+        // Black Ground
+        const floorGeo = new THREE.PlaneGeometry(100, 100);
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // 3D Player (Representing the Churail/Character)
+        const playerGeo = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
+        const playerMat = new THREE.MeshStandardMaterial({ color: 0x330000 });
+        const player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.y = 1;
+        scene.add(player);
+
+        // Movement Variables
+        let stamina = 100;
+        let isJumping = false;
+        let yVelocity = 0;
         const keys = {};
 
-        // Keyboard Events
-        window.addEventListener('keydown', (e) => { keys[e.code] = true; });
-        window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-        function gameLoop() {
-            // 1. Black Ground (Clear Screen)
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function animate() {
+            requestAnimationFrame(animate);
 
-            let currentSpeed = player.baseSpeed;
+            let speed = 0.1;
+            const bar = document.getElementById('stamina-bar');
 
-            // 2. Crouch Logic (C)
+            // Crouch
             if (keys['KeyC']) {
-                currentSpeed = 1.5;
-                player.displaySize = 35;
+                speed = 0.04;
+                player.scale.y = 0.5;
             } else {
-                player.displaySize = 50;
+                player.scale.y = 1;
             }
 
-            // 3. Sprint & Stamina Logic (Shift)
-            if (keys['ShiftLeft'] && player.stamina > 0 && !keys['KeyC']) {
-                currentSpeed = 7;
-                player.stamina -= 1.0; // Sprinting uses stamina
-            } else {
-                if (player.stamina < 100) player.stamina += 0.5; // Recovery
+            // Sprint
+            if (keys['ShiftLeft'] && stamina > 0 && !keys['KeyC']) {
+                speed = 0.2;
+                stamina -= 0.5;
+            } else if (stamina < 100) {
+                stamina += 0.2;
             }
 
-            // 4. Movement (WASD)
-            if (keys['KeyW']) player.y -= currentSpeed;
-            if (keys['KeyS']) player.y += currentSpeed;
-            if (keys['KeyA']) player.x -= currentSpeed;
-            if (keys['KeyD']) player.x += currentSpeed;
+            // Movement
+            if (keys['KeyW']) player.position.z -= speed;
+            if (keys['KeyS']) player.position.z += speed;
+            if (keys['KeyA']) player.position.x -= speed;
+            if (keys['KeyD']) player.position.x += speed;
 
-            // 5. Jump Logic (Space)
-            if (keys['Space'] && !player.isJumping) {
-                player.isJumping = true;
-                player.yVelocity = -15;
+            // Jump
+            if (keys['Space'] && !isJumping) {
+                isJumping = true;
+                yVelocity = 0.15;
             }
 
-            if (player.isJumping) {
-                player.y += player.yVelocity;
-                player.yVelocity += 0.8; // Gravity
-
-                // Boundary check to stop falling
-                if (player.y > canvas.height - 50) {
-                    player.y = canvas.height - 50;
-                    player.isJumping = false;
+            if (isJumping) {
+                player.position.y += yVelocity;
+                yVelocity -= 0.008; // Gravity
+                if (player.position.y <= 1) {
+                    player.position.y = 1;
+                    isJumping = false;
                 }
             }
 
-            // 6. UI Update
-            staminaBar.style.width = Math.max(0, player.stamina) + "%";
-            staminaBar.style.backgroundColor = player.stamina < 30 ? "#ff0000" : "#00ff00";
+            // Camera follow
+            camera.position.set(player.position.x, player.position.y + 2, player.position.z + 5);
+            camera.lookAt(player.position);
+            light.position.set(player.position.x, player.position.y + 2, player.position.z);
 
-            // 7. Draw Churail (Default Emoji)
-            ctx.font = `${player.displaySize}px serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText("🧛‍♀️", player.x, player.y);
+            // UI
+            bar.style.width = stamina + "%";
+            bar.style.backgroundColor = stamina < 25 ? "red" : "#0f0";
 
-            requestAnimationFrame(gameLoop);
+            renderer.render(scene, camera);
         }
 
-        // Click to start ensures the browser focuses the game
-        window.addEventListener('click', () => {
-            console.log("Game Started");
-        }, { once: true });
+        animate();
 
-        gameLoop();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
