@@ -2,62 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>VOID AURA - THE FINAL CHAPTER</title>
+    <title>VOID AURA - CLEAR VERSION</title>
     <style>
-        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: 'Courier New', Courier, monospace; }
-        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #000; color: #fff; z-index: 1000; text-align: center; }
-        #start-btn { padding: 20px 60px; font-size: 26px; background: #900; color: #fff; border: 3px solid #fff; cursor: pointer; font-weight: bold; }
-        #stamina-box { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 200px; height: 10px; background: #222; border: 1px solid #555; }
-        #stamina-bar { height: 100%; width: 100%; background: #f00; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        body, html { margin: 0; padding: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #ui { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.8); color: #fff; z-index: 1000; text-align: center; }
+        #start-btn { padding: 15px 50px; font-size: 22px; background: #900; color: #fff; border: 2px solid #fff; cursor: pointer; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: red; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
     </style>
 </head>
 <body>
 
 <div id="ui">
-    <h1 style="color: #f00; font-size: 60px; margin: 10px;">VOID AURA</h1>
-    <button id="start-btn">ENTER MISSION</button>
-    <p style="color: #666; margin-top: 20px;">W,A,S,D: Move | SHIFT: Sprint | SPACE: Jump | C: Crouch</p>
+    <h1 style="color: #f00;">VOID AURA</h1>
+    <button id="start-btn">START GAME</button>
+    <p>WASD: Move | SPACE: Jump | SHIFT: Run</p>
 </div>
 
 <div id="crosshair"></div>
-<div id="stamina-box"><div id="stamina-bar"></div></div>
 
 <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <script>
-    // --- BASIC SETUP ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x010101);
-    scene.fog = new THREE.FogExp2(0x010101, 0.08);
+    scene.background = new THREE.Color(0x050505);
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    const light = new THREE.AmbientLight(0xffffff, 2.0); 
-    scene.add(light);
+    // Tez roshni taaki blurry na lage
+    const ambient = new THREE.AmbientLight(0xffffff, 1.5);
+    scene.add(ambient);
 
-    // --- CONTROLS ---
     const controls = new THREE.PointerLockControls(camera, document.body);
-    const startBtn = document.getElementById('start-btn');
-
-    startBtn.onclick = () => {
-        controls.lock();
-    };
-
+    document.getElementById('start-btn').onclick = () => controls.lock();
     controls.addEventListener('lock', () => document.getElementById('ui').style.display = 'none');
     controls.addEventListener('unlock', () => document.getElementById('ui').style.display = 'flex');
 
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: 0x080808 }));
+    // --- GRID FLOOR (Movement check karne ke liye) ---
+    const grid = new THREE.GridHelper(200, 50, 0xff0000, 0x444444);
+    scene.add(grid);
+
+    // Asli Zameen
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(200, 200), 
+        new THREE.MeshStandardMaterial({ color: 0x111111 })
+    );
     ground.rotation.x = -Math.PI / 2;
     scene.add(ground);
 
-    // --- GHOST LOADING ---
+    /* --- GHOST --- */
     let ghost = null, mixer = null;
     const clock = new THREE.Clock();
     const loader = new THREE.GLTFLoader();
@@ -65,18 +62,18 @@
     loader.load('./ghost_girl.glb', (gltf) => {
         ghost = gltf.scene;
         ghost.scale.set(1.5, 1.5, 1.5);
-        ghost.position.set(0, 0, -15);
+        ghost.position.set(0, 0, -10);
         scene.add(ghost);
         mixer = new THREE.AnimationMixer(ghost);
         if (gltf.animations.length > 0) mixer.clipAction(gltf.animations[0]).play();
     });
 
-    // --- MOVEMENT ENGINE ---
     const keys = {};
-    window.addEventListener('keydown', (e) => { keys[e.code] = true; });
-    window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+    window.onkeydown = (e) => keys[e.code] = true;
+    window.onkeyup = (e) => keys[e.code] = false;
 
-    let vY = 0, jumping = false, stamina = 100, pHeight = 1.7;
+    let vY = 0, jumping = false;
+    camera.position.y = 1.7;
 
     function animate() {
         requestAnimationFrame(animate);
@@ -84,61 +81,29 @@
         if (mixer) mixer.update(delta);
 
         if (controls.isLocked) {
-            // Speed logic
-            let sprinting = keys['ShiftLeft'] && stamina > 5;
-            let crouching = keys['KeyC'];
-            let speed = sprinting ? 0.35 : (crouching ? 0.08 : 0.18);
+            let speed = keys['ShiftLeft'] ? 0.3 : 0.15;
 
-            // Stamina
-            if (sprinting) stamina -= 0.6; else stamina += 0.3;
-            stamina = Math.min(100, Math.max(0, stamina));
-            document.getElementById('stamina-bar').style.width = stamina + "%";
-
-            // WASD Movement
             if (keys['KeyW']) controls.moveForward(speed);
             if (keys['KeyS']) controls.moveForward(-speed);
             if (keys['KeyA']) controls.moveRight(-speed);
             if (keys['KeyD']) controls.moveRight(speed);
 
-            // Jump
-            if (keys['Space'] && !jumping) { vY = 0.22; jumping = true; }
-
-            // Crouch and Gravity
-            let targetH = crouching ? 0.8 : 1.7;
-            pHeight += (targetH - pHeight) * 0.1;
+            if (keys['Space'] && !jumping) { vY = 0.2; jumping = true; }
             
             camera.position.y += vY;
             vY -= 0.01;
-            if (camera.position.y <= pHeight) {
-                camera.position.y = pHeight;
-                vY = 0;
-                jumping = false;
-            }
+            if (camera.position.y < 1.7) { camera.position.y = 1.7; vY = 0; jumping = false; }
 
-            // Ghost AI
             if (ghost) {
-                let dist = ghost.position.distanceTo(camera.position);
-                let gDir = new THREE.Vector3().subVectors(camera.position, ghost.position);
-                gDir.y = 0; gDir.normalize();
-                ghost.position.add(gDir.multiplyScalar(0.06));
+                let dir = new THREE.Vector3().subVectors(camera.position, ghost.position);
+                dir.y = 0; dir.normalize();
+                ghost.position.add(dir.multiplyScalar(0.05));
                 ghost.lookAt(camera.position.x, 0, camera.position.z);
-                
-                if (dist < 1.5) {
-                    controls.unlock();
-                    alert("THE GHOST CAUGHT YOU!");
-                    location.reload();
-                }
             }
         }
         renderer.render(scene, camera);
     }
     animate();
-
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
 </script>
 </body>
 </html>
