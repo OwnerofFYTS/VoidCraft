@@ -1,5 +1,147 @@
-body { margin: 0; background: #000; overflow: hidden; color: white; font-family: 'Courier New', Courier, monospace; }
-#game-ui { position: absolute; top: 20px; left: 20px; }
-#stamina-container { width: 200px; height: 10px; background: #222; border: 1px solid #444; }
-#stamina-bar { width: 100%; height: 100%; background: #0f0; }
-canvas { display: block; background: #000; } /* Zameen Black */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horror Game - SkyViper</title>
+    <style>
+        /* CSS Section */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000; /* Zameen bilkul black */
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #game-ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #stamina-container {
+            width: 200px;
+            height: 10px;
+            border: 2px solid #555;
+            background: #222;
+            margin-bottom: 5px;
+        }
+
+        #stamina-bar {
+            width: 100%;
+            height: 100%;
+            background: #0f0;
+            transition: width 0.1s linear;
+        }
+
+        canvas {
+            display: block;
+            background: #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-ui">
+        <div id="stamina-container">
+            <div id="stamina-bar"></div>
+        </div>
+        <p id="status">W A S D: Move | Shift: Sprint | C: Crouch | Space: Jump</p>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        // JAVASCRIPT Section
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const staminaBar = document.getElementById('stamina-bar');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 45,
+            speed: 3,
+            stamina: 100,
+            yVelocity: 0,
+            isJumping: false
+        };
+
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
+
+        function update() {
+            // Black Background
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let currentSpeed = player.speed;
+
+            // Crouch Logic
+            if (keys['KeyC']) {
+                currentSpeed = 1.5; 
+                player.size = 35;
+            } else {
+                player.size = 45;
+            }
+
+            // Sprint & Stamina Logic
+            if (keys['ShiftLeft'] && player.stamina > 0 && !keys['KeyC']) {
+                currentSpeed = 6.5;
+                player.stamina -= 0.8;
+            } else {
+                if (player.stamina < 100) player.stamina += 0.4;
+            }
+
+            // Movement (WASD)
+            if (keys['KeyW']) player.y -= currentSpeed;
+            if (keys['KeyS']) player.y += currentSpeed;
+            if (keys['KeyA']) player.x -= currentSpeed;
+            if (keys['KeyD']) player.x += currentSpeed;
+
+            // Simple Jump Logic
+            if (keys['Space'] && !player.isJumping) {
+                player.isJumping = true;
+                player.yVelocity = -12;
+            }
+
+            if (player.isJumping) {
+                player.y += player.yVelocity;
+                player.yVelocity += 0.6; 
+                
+                // Screen boundaries takay player gayab na ho
+                if (player.y > canvas.height - 50) {
+                    player.y = canvas.height - 50;
+                    player.isJumping = false;
+                }
+            }
+
+            // UI Update
+            staminaBar.style.width = player.stamina + "%";
+            staminaBar.style.backgroundColor = player.stamina < 25 ? "red" : "#0f0";
+
+            // Draw Default Churail (Emoji)
+            ctx.font = `${player.size}px serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("🧛‍♀️", player.x, player.y);
+
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        update();
+    </script>
+</body>
+</html>
