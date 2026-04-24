@@ -14,7 +14,7 @@
             overflow: hidden;
         }
 
-        /* Flashlight - pointer-events none taake clicks neeche ja saken */
+        /* Flashlight effect */
         #flashlight {
             position: fixed;
             top: 0; left: 0;
@@ -47,16 +47,7 @@
             font-size: 1.2rem;
             cursor: pointer;
             position: relative;
-            z-index: 1000; /* Isse button click hoga */
-        }
-
-        #jumpscare {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: url('https://i.imgur.com/vH97Z9O.jpg') center/cover;
-            z-index: 2000; /* Sab se upar */
+            z-index: 1000;
         }
 
         #status {
@@ -74,24 +65,18 @@
     <div id="world">
         <div id="game-content">
             <h1>VOID AURA</h1>
-            <p id="msg">Taiyar ho?</p>
-            <button class="btn-start" id="startBtn" onclick="startGame()">PLAY GAME</button>
+            <p id="msg">Movement Sensors Active</p>
+            <button class="btn-start" id="startBtn" onclick="this.style.display='none'">PLAY GAME</button>
         </div>
     </div>
 
-    <div id="jumpscare"></div>
     <div id="status">STATUS: STANDING</div>
-
-    <audio id="scare-sound" src="https://www.soundjay.com/human/sounds/shriek-01.mp3"></audio>
 
     <script>
         const flashlight = document.getElementById('flashlight');
         const world = document.getElementById('world');
         const gameContent = document.getElementById('game-content');
         const statusText = document.getElementById('status');
-        const jumpscare = document.getElementById('jumpscare');
-        const scareSound = document.getElementById('scare-sound');
-        const startBtn = document.getElementById('startBtn');
 
         let posX = 0, posY = 0;
         let isCrouching = false;
@@ -115,6 +100,7 @@
                 isCrouching = true;
                 world.style.transform = "translateY(80px)";
                 statusText.innerText = "STATUS: CROUCHED";
+                console.log("Crouched");
             }
 
             gameContent.style.transform = `translate(${posX}px, ${posY}px)`;
@@ -127,22 +113,6 @@
                 statusText.innerText = "STATUS: STANDING";
             }
         });
-
-        function startGame() {
-            startBtn.style.display = 'none'; // Button gayab
-            document.getElementById('msg').innerText = "Andhera shuru ho chuka hai...";
-            
-            // Jumpscare 5 seconds baad (5000ms)
-            setTimeout(() => {
-                jumpscare.style.display = 'block';
-                scareSound.play().catch(err => console.log("Sound error: Click screen first"));
-                
-                // 1.5 second baad jumpscare hat jayega
-                setTimeout(() => {
-                    jumpscare.style.display = 'none';
-                }, 1500);
-            }, 5000);
-        }
     </script>
 </body>
 </html>
