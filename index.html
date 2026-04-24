@@ -3,61 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Dark Corridor - Horror Game</title>
+    <title>Ghost Hunter AI - 3D Horror</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
-        #ui { position: absolute; bottom: 20px; left: 20px; color: red; font-size: 20px; text-shadow: 2px 2px #000; pointer-events: none; }
-        #instructions { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; text-align: center; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; }
+        
+        /* Play Screen UI */
+        #overlay {
+            position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, #220000, #000);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; transition: 0.5s;
+        }
+        h1 { color: #ff0000; font-size: 50px; letter-spacing: 10px; margin-bottom: 10px; }
+        button {
+            padding: 15px 40px; font-size: 20px; background: transparent; color: white;
+            border: 2px solid #ff0000; cursor: pointer; transition: 0.3s;
+        }
+        button:hover { background: #ff0000; box-shadow: 0 0 20px #ff0000; }
+        
+        #hud { position: absolute; top: 20px; left: 20px; color: white; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="instructions">
-        <h1>THE DARK CORRIDOR</h1>
-        <p>Click to Start</p>
-        <p>(W,A,S,D to Walk | Mouse to Look)</p>
+    <div id="overlay">
+        <h1>THE GHOST AI</h1>
+        <p style="color: #666;">Don't let it touch you in the dark...</p>
+        <button onclick="startGame()">PLAY GAME</button>
     </div>
 
-    <div id="ui">BATTERY: 100%</div>
+    <div id="hud">DISTANCE: <span id="dist">0</span>m</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/controls/PointerLockControls.js"></script>
 
     <script>
-        let scene, camera, renderer, controls, flashlight;
-        let ghost;
+        let scene, camera, renderer, controls, flashlight, ghost;
+        let moveForward = false, moveBackward = false;
+        let gameActive = false;
+
+        function startGame() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            controls.lock();
+            gameActive = true;
+        }
 
         function init() {
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.15); // Dhund (Fog)
+            scene.fog = new THREE.FogExp2(0x000000, 0.12);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
+            camera.position.y = 1.6;
+
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
             // Floor
-            const floorGeo = new THREE.PlaneGeometry(100, 100);
-            const floorMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-            const floor = new THREE.Mesh(floorGeo, floorMat);
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(200, 200),
+                new THREE.MeshStandardMaterial({ color: 0x111111 })
+            );
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // Walls (Corridor)
-            const wallMat = new THREE.MeshStandardMaterial({ color: 0x050505 });
-            for(let i = -10; i < 10; i++) {
-                const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(1, 5, 10), wallMat);
-                wallLeft.position.set(-3, 2.5, i * 10);
-                scene.add(wallLeft);
-                
-                const wallRight = new THREE.Mesh(new THREE.BoxGeometry(1, 5, 10), wallMat);
-                wallRight.position.set(3, 2.5, i * 10);
-                scene.add(wallRight);
-            }
+            // Lighting (Very Dark)
+            const ambient = new THREE.AmbientLight(0x404040, 0.1);
+            scene.add(ambient);
 
-            // Flashlight (SpotLight)
-            flashlight = new THREE.SpotLight(0xffffff, 2, 15, Math.PI / 6, 0.5);
+            // Flashlight
+            flashlight = new THREE.SpotLight(0xffffff, 2.5, 20, Math.PI / 6, 0.5);
             camera.add(flashlight);
             flashlight.position.set(0, 0, 0);
             flashlight.target = new THREE.Object3D();
@@ -65,55 +80,66 @@
             flashlight.target.position.set(0, 0, -1);
             scene.add(camera);
 
-            // Ghost (Scary Cube for now)
-            const ghostGeo = new THREE.BoxGeometry(1, 2, 1);
-            const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+            // Ghost AI Entity
+            const ghostGeo = new THREE.BoxGeometry(0.8, 2, 0.8);
+            const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
             ghost = new THREE.Mesh(ghostGeo, ghostMat);
-            ghost.position.set(0, 1, -15);
+            ghost.position.set(10, 1, -10);
             scene.add(ghost);
 
-            // Controls
             controls = new THREE.PointerLockControls(camera, document.body);
-            document.body.addEventListener('click', () => {
-                controls.lock();
-                document.getElementById('instructions').style.display = 'none';
+
+            // Controls
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'KeyW') moveForward = true;
+                if (e.code === 'KeyS') moveBackward = true;
+            });
+            document.addEventListener('keyup', (e) => {
+                if (e.code === 'KeyW') moveForward = false;
+                if (e.code === 'KeyS') moveBackward = false;
             });
 
             animate();
         }
 
-        // Movement Logic
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-        const onKeyDown = (e) => {
-            if (e.code === 'KeyW') moveForward = true;
-            if (e.code === 'KeyS') moveBackward = true;
-        };
-        const onKeyUp = (e) => {
-            if (e.code === 'KeyW') moveForward = false;
-            if (e.code === 'KeyS') moveBackward = false;
-        };
-        document.addEventListener('keydown', onKeyDown);
-        document.addEventListener('keyup', onKeyUp);
-
         function animate() {
             requestAnimationFrame(animate);
-
-            if (controls.isLocked) {
-                if (moveForward) controls.moveForward(0.05);
+            if (gameActive && controls.isLocked) {
+                // Player Movement
+                if (moveForward) controls.moveForward(0.08);
                 if (moveBackward) controls.moveForward(-0.05);
 
-                // Simple Ghost Jumpscare Logic
-                let dist = camera.position.distanceTo(ghost.position);
-                if(dist < 5) {
-                    ghost.material.opacity = 1; // Ghost appears
-                    ghost.position.z += 0.1;   // Ghost moves towards you
+                // --- GHOST AI LOGIC ---
+                // Ghost hamesha player ki taraf move karega
+                const direction = new THREE.Vector3();
+                direction.subVectors(camera.position, ghost.position).normalize();
+                
+                // Ghost speed
+                ghost.position.x += direction.x * 0.03;
+                ghost.position.z += direction.z * 0.03;
+                ghost.lookAt(camera.position.x, 1, camera.position.z);
+
+                // Distance Check
+                let d = Math.floor(camera.position.distanceTo(ghost.position));
+                document.getElementById('dist').innerText = d;
+
+                // Game Over if Ghost touches you
+                if (d < 1.5) {
+                    gameActive = false;
+                    alert("GHOST CAUGHT YOU!");
+                    location.reload();
                 }
             }
-
             renderer.render(scene, camera);
         }
 
         init();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 </body>
 </html>
