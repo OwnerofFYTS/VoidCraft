@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Horror - Direct Follow</title>
+    <title>Ghost Pursuit - Fixed</title>
     <style>
         body { margin: 0; background-color: #000; color: white; font-family: sans-serif; overflow: hidden; }
         #menu { position: absolute; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
         button { padding: 20px 50px; font-size: 24px; background: #900; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #c00; }
         #ui { position: absolute; top: 20px; left: 20px; font-size: 1.2rem; z-index: 10; display: none; }
         #stamina-bar { width: 200px; height: 10px; background: #333; border: 1px solid white; margin-top: 5px; }
         #stamina-fill { width: 100%; height: 100%; background: #0f0; }
@@ -18,10 +19,12 @@
     <div id="ui">
         DISTANCE: <span id="dist">--</span>m
         <div id="stamina-bar"><div id="stamina-fill"></div></div>
+        <p style="font-size: 0.8rem; color: #888;">WASD: Move | SHIFT: Sprint | C: Crouch | SPACE: Jump</p>
     </div>
 
     <div id="menu">
-        <h1 style="color: red;">GHOST PURSUIT</h1>
+        <h1 style="color: red; font-size: 3rem; margin-bottom: 10px;">GHOST PURSUIT</h1>
+        <p style="margin-bottom: 20px;">Don't let it touch you.</p>
         <button id="playBtn">PLAY</button>
     </div>
 
@@ -35,9 +38,10 @@
         let stamina = 100, velocityY = 0, gameActive = false;
 
         function init() {
+            // Scene Setup
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x000000);
-            scene.fog = new THREE.FogExp2(0x000000, 0.1);
+            scene.fog = new THREE.FogExp2(0x000000, 0.15);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             
@@ -45,12 +49,19 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            // Ground
+            const groundGeo = new THREE.PlaneGeometry(1000, 1000);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
             ground.rotation.x = -Math.PI / 2;
             scene.add(ground);
 
-            // Flashlight - Focus 5m-15m range clear
-            flashlight = new THREE.SpotLight(0xffffff, 20, 25, Math.PI / 4, 0.5);
+            // Ambient Light (Very dim)
+            const ambient = new THREE.AmbientLight(0x404040, 0.2);
+            scene.add(ambient);
+
+            // Flashlight
+            flashlight = new THREE.SpotLight(0xffffff, 2, 30, Math.PI / 4, 0.3, 1);
             camera.add(flashlight);
             flashlight.position.set(0, 0, 0);
             flashlight.target = new THREE.Object3D();
@@ -58,20 +69,35 @@
             flashlight.target.position.set(0, 0, -1);
             scene.add(camera);
 
-            // Ghost - Simple Wireframe
-            ghost = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2, 0.8), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true }));
-            ghost.position.set(30, 1, -30);
+            // Ghost - Wireframe Box
+            ghost = new THREE.Mesh(
+                new THREE.BoxGeometry(0.8, 2, 0.8), 
+                new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true })
+            );
+            ghost.position.set(20, 1, -20);
             scene.add(ghost);
 
+            // Controls
             controls = new THREE.PointerLockControls(camera, document.body);
+            
             document.getElementById('playBtn').addEventListener('click', () => {
                 controls.lock();
+            });
+
+            controls.addEventListener('lock', () => {
                 document.getElementById('menu').style.display = 'none';
                 document.getElementById('ui').style.display = 'block';
                 gameActive = true;
             });
 
-            document.addEventListener('keydown', (e) => {
+            controls.addEventListener('unlock', () => {
+                if(gameActive) {
+                    document.getElementById('menu').style.display = 'flex';
+                }
+            });
+
+            // Key Events
+            const onKeyDown = (e) => {
                 if(e.code === 'KeyW') moveF = true;
                 if(e.code === 'KeyS') moveB = true;
                 if(e.code === 'KeyA') moveL = true;
@@ -79,14 +105,24 @@
                 if(e.code === 'ShiftLeft') isSprint = true;
                 if(e.code === 'KeyC') isCrouch = true;
                 if(e.code === 'Space' && canJump) { velocityY = 0.15; canJump = false; }
-            });
-            document.addEventListener('keyup', (e) => {
+            };
+
+            const onKeyUp = (e) => {
                 if(e.code === 'KeyW') moveF = false;
                 if(e.code === 'KeyS') moveB = false;
                 if(e.code === 'KeyA') moveL = false;
                 if(e.code === 'KeyD') moveR = false;
                 if(e.code === 'ShiftLeft') isSprint = false;
                 if(e.code === 'KeyC') isCrouch = false;
+            };
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
             animate();
@@ -96,40 +132,44 @@
             requestAnimationFrame(animate);
 
             if (gameActive) {
-                // --- SIMPLE GHOST FOLLOW (NO AI, NO GLITCH) ---
-                // Ghost hamesha player ka peecha karega bina kisi condition ke
-                let ghostSpeed = 0.0707; // Normal speed (0.07) + 1%
+                // --- FIXED GHOST LOGIC ---
+                // Constant following regardless of player movement
+                let ghostSpeed = 0.072; // Player walk se thoda slow
                 
                 let dx = camera.position.x - ghost.position.x;
                 let dz = camera.position.z - ghost.position.z;
                 let distToPlayer = Math.sqrt(dx * dx + dz * dz);
 
-                if (distToPlayer > 0.1) {
+                if (distToPlayer > 0.5) {
                     ghost.position.x += (dx / distToPlayer) * ghostSpeed;
                     ghost.position.z += (dz / distToPlayer) * ghostSpeed;
                 }
                 
                 ghost.lookAt(camera.position.x, 1, camera.position.z);
 
-                // Distance UI update
+                // Distance UI
                 let d = camera.position.distanceTo(ghost.position);
                 document.getElementById('dist').innerText = d.toFixed(1);
                 
-                if(d < 1.3) { 
+                // Game Over Check
+                if(d < 1.1) { 
                     gameActive = false;
-                    alert("GAME OVER!"); 
+                    alert("THE GHOST CAUGHT YOU!"); 
                     location.reload(); 
+                    return;
                 }
 
                 if (controls.isLocked) {
                     // Player Movement
-                    let speed = isCrouch ? 0.03 : 0.07;
+                    let speed = isCrouch ? 0.04 : 0.08;
+                    
                     if(isSprint && stamina > 0 && (moveF || moveB || moveL || moveR)) { 
                         speed = 0.15; 
-                        stamina -= 0.9; 
+                        stamina -= 0.8; 
                     } else if(stamina < 100) { 
                         stamina += 0.3; 
                     }
+                    
                     document.getElementById('stamina-fill').style.width = stamina + '%';
 
                     if (moveF) controls.moveForward(speed);
@@ -137,15 +177,21 @@
                     if (moveL) controls.moveRight(-speed);
                     if (moveR) controls.moveRight(speed);
 
-                    // Jump/Crouch Logic
+                    // Jump/Crouch Physics
                     let headH = isCrouch ? 0.8 : 1.6;
                     camera.position.y += velocityY;
-                    if(camera.position.y > headH) { velocityY -= 0.008; }
-                    else { camera.position.y = headH; velocityY = 0; canJump = true; }
+                    if(camera.position.y > headH) { 
+                        velocityY -= 0.008; 
+                    } else { 
+                        camera.position.y = headH; 
+                        velocityY = 0; 
+                        canJump = true; 
+                    }
                 }
             }
             renderer.render(scene, camera);
         }
+
         init();
     </script>
 </body>
